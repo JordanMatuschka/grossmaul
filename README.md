@@ -1,0 +1,2 @@
+# grossmaul
+Loudmouth IRC bot
