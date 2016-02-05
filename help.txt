@@ -1,0 +1,33 @@
+Ever-evolving cheatsheet for dealing with the bot:
+
+Parsing order:
+    1) Operators
+    2) Commands
+    3) Factoids
+
+Currently defined operators:
+    := define a factoid
+    << add to keyword set
+
+Example of keyword and factoid operator usage:
+
+    15:10 < tirtirtir> BeerRobot: shittyplace << Gary, Indiana
+    15:10 < BeerRobot> Ok tirtirtir, remembering Gary, Indiana is a shittyplace
+    15:10 < tirtirtir> BeerRobot: shittyplace << Valkenvania
+    15:10 < BeerRobot> Ok tirtirtir, remembering Valkenvania is a shittyplace
+    15:11 < tirtirtir> BeerRobot: shittyplace << The DMV
+    15:11 < BeerRobot> Ok tirtirtir, remembering The DMV is a shittyplace
+    15:12 < tirtirtir> BeerRobot: vacation := You should go to $shittyplace for your next vacation.
+    15:12 < BeerRobot> Ok tirtirtir, remembering vacation -> You should go to $shittyplace for your next vacation.
+    15:12 < tirtirtir> vacation
+    15:12 < BeerRobot> You should go to Valkenvania for your next vacation.
+
+Special keywords:
+    $nick is replaced by the user who sent the message
+    $user is replaced by a random user who is active in the channel
+
+Currently defined commands:
+    remember (username) (text to match)
+    recall (optional username)
+
+
