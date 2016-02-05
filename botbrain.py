@@ -6,7 +6,7 @@ class BotBrain:
     def __init__(self):
         self.memory = Memory()
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
-        self.COMMANDS  = {"remember" : self.comRemember, "quote" : self.comFindQuote, "recall" : self.comFindQuote }
+        self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote }
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -60,8 +60,12 @@ class BotBrain:
 
     def comFindQuote(self, message, sender, STATE):
         print ("***** comFindQuote %s" % message)
-        trigger = message[len("quote")+1:]
-        return self.memory.getQuote(trigger.rstrip().lstrip())
+        trigger = message[len("recall")+1:]
+        query = trigger.rstrip().lstrip()
+        if (len(query) > 0):
+            return self.memory.getQuote(query)
+        else:
+            return self.memory.getRandomQuote()
 
     def findFactoid(self, trigger):
         return self.memory.getFactoid(trigger)    

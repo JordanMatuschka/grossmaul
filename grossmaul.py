@@ -1,6 +1,7 @@
 import pydle
 import logging
 import collections
+import random
 from botbrain import BotBrain
 from types import FunctionType
 from importlib import reload
@@ -22,6 +23,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class GrossmaulBot(pydle.Client):
     """  """
+    botbrain = None
+
     def sendMessage(self, target, message, processing = True):
         """Customize message sending to allow for keyword parsing"""
         # Look for a $ that indicates keywords
@@ -31,7 +34,7 @@ class GrossmaulBot(pydle.Client):
                 words = message.split()
                 for word in words:
                     if word[0] is '$':
-                        # parse into only alpha characters
+                        # parse into only alpha characters (+ some others)
                         keyword = ''
                         for char in word:
                             if char.isalpha() or char in "-_": keyword += (char)
@@ -78,6 +81,11 @@ class GrossmaulBot(pydle.Client):
     def on_message(self, channel, sender, message):
         """Callback called when the client received a message."""
         global STATE 
+
+        # make sure the username is initialized for counter use
+        if(sender not in STATE['counters'].keys()): 
+            logging.info("Adding %s key to STATE['counters']" % sender)
+            STATE['counters'][sender] = {}
 
         # Filter out private messages, those will be handled in on_private_message
         if(channel == NICK): return
@@ -126,7 +134,7 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(CHAN, factoid)
+                    self.sendMessage(CHAN, self.preprocess_message(sender, factoid))
                 else:
                     # If it's not an operator, command, or factoid, look for a __confused response
                     factoid = self.botbrain.findFactoid("__confused")
@@ -140,7 +148,16 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(CHAN, factoid)
+                    self.sendMessage(CHAN, self.preprocess_message(sender, factoid))
+
+    def preprocess_message(self, sender, message):
+        """ Allow use of $nick and $user keywords in factoids etc """
+        global STATE
+        # First allow the bot to address who it's responding to via $nick
+        message = message.replace("$nick", sender)        
+        # replace any instances of $user with a random username from STATE 
+        message = message.replace("$user", random.choice(list(STATE['counters'].keys())))
+        return message
 
     def on_private_message(self, sender, message):
         global STATE
@@ -162,7 +179,8 @@ class GrossmaulBot(pydle.Client):
         if("PING" in "%s" % message): 
             logging.info("PING!")
             # make sure db stays available
-            self.botbrain.keepConnection()
+            if self.botbrain is not None: 
+                self.botbrain.keepConnection()
             
         # Let the base client handle the raw stuff
         super(GrossmaulBot, self).on_raw(message)

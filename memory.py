@@ -100,5 +100,15 @@ class Memory:
             q.lastSeen = datetime.datetime.now()
             q.save()
             # Return the formatted quote
-            return "< %s> %s" % (q.trigger, q.quote)
-        return "I don't know that."
+            return "<%s> %s" % (q.trigger, q.quote)
+        return "I don't have any quotes for %s." % trigger
+
+    def getRandomQuote(self):
+        for q in Quote.select().order_by(fn.Rand()).limit(1):
+            # Update statistics 
+            q.timesSeen = q.timesSeen + 1
+            q.lastSeen = datetime.datetime.now()
+            q.save()
+            # Return the formatted quote
+            return "<%s> %s" % (q.trigger, q.quote)
+        return "No quotes found."
