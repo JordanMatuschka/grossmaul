@@ -34,10 +34,10 @@ class GrossmaulBot(pydle.Client):
                 words = message.split()
                 for word in words:
                     if word[0] is '$':
-                        # parse into only alpha characters (+ some others)
+                        # parse into only alphanumeric characters (+ some others)
                         keyword = ''
                         for char in word:
-                            if char.isalpha() or char in "-_": keyword += (char)
+                            if char.isalnum() or char in "-_": keyword += (char)
                         replacement = self.botbrain.findKeyword(keyword.lower())
                         if (replacement is not None):
                             message = message.replace(word, replacement, 1)
