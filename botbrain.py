@@ -67,8 +67,16 @@ class BotBrain:
         else:
             return self.memory.getRandomQuote()
 
+    def stripChars(self, string):
+        return ''.join([l for l in string if l.isalnum() or l in ' '])
+
     def findFactoid(self, trigger):
-        return self.memory.getFactoid(trigger)    
-    
+        ret = self.memory.getFactoid(trigger)
+        if (ret is not None):
+            return ret
+        else:
+            # if the factoid is not found, strip out punctuation etc and try again
+            return self.memory.getFactoid(self.stripChars(trigger))
+
     def findKeyword(self, keyword):
         return self.memory.getKeyword(keyword)    

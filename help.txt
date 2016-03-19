@@ -1,5 +1,7 @@
 Ever-evolving cheatsheet for dealing with the bot:
 
+Address the bot either by prefacing with !, or by using its name e.g. "BeerRobot: command"
+
 Parsing order:
     1) Operators
     2) Commands
@@ -21,6 +23,9 @@ Example of keyword and factoid operator usage:
     15:12 < BeerRobot> Ok tirtirtir, remembering vacation -> You should go to $shittyplace for your next vacation.
     15:12 < tirtirtir> vacation
     15:12 < BeerRobot> You should go to Valkenvania for your next vacation.
+
+    Surrounding a keyword in $'s allows you use it inside a word
+    eg Abso-$keyword$-lutely!
 
 Special keywords:
     $nick is replaced by the user who sent the message

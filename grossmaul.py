@@ -33,14 +33,21 @@ class GrossmaulBot(pydle.Client):
                 # split into words
                 words = message.split()
                 for word in words:
-                    if word[0] is '$':
+                    if word.count('$') == 2:
+                        # If there are two $s, keyword is embedded
+                        # eg Abso-$keyword$-lutely!
+                        keyword = word.split('$')[1]
+                        replacement = self.botbrain.findKeyword(keyword.lower())
+                        if (replacement is not None):
+                            message = message.replace('$' + keyword + '$', replacement, 1)
+                    elif word[0] is '$':
                         # parse into only alphanumeric characters (+ some others)
                         keyword = ''
                         for char in word:
                             if char.isalnum() or char in "-_": keyword += (char)
                         replacement = self.botbrain.findKeyword(keyword.lower())
                         if (replacement is not None):
-                            message = message.replace(word, replacement, 1)
+                            message = message.replace('$' + keyword, replacement, 1)
         
         # If the message starts with /me it is an action, treat accordingly        
         if message.lower().startswith("/me"):
@@ -96,9 +103,12 @@ class GrossmaulBot(pydle.Client):
 
         logging.info("Message received, channel: %s, sender: %s, message: %s" % (channel, sender, message))
         # For now, make sure that the message is addressed to this bot
-        if(len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower()):
-            # remove the bot name from the message
-            message = message[len(NICK)+1:]
+        if(message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
+            # remove the bot name/bang from the message
+            if(message[0] == '!'):
+                message = message[1:]
+            else:
+                message = message[len(NICK)+1:]
 
             # Parse for special operators
             is_op = False
