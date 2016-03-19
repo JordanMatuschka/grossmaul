@@ -79,6 +79,17 @@ class Memory:
             # Return only the replacement text
             return k.replacement
 
+    def getLatestFactoid(self):
+        # Honestly this isn't prettier than just writing SQL
+        print ("******@!@#!@#!@#!@# GET LATEST QUOTE")
+        for f in Factoid.select().order_by(Factoid.id.desc()).limit(1):
+            # Update statistics 
+            f.timesSeen = f.timesSeen + 1
+            f.lastSeen = datetime.datetime.now()
+            f.save()
+            # Return only the text of the factoid
+            return f.quote
+
     def getFactoid(self, trigger):
         # Honestly this isn't prettier than just writing SQL
         for f in Factoid.select().where(Factoid.trigger == trigger).order_by(fn.Rand()).limit(1):

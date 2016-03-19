@@ -134,8 +134,8 @@ class GrossmaulBot(pydle.Client):
                     logging.info("Command: %s" % command)
                     retval = self.botbrain.COMMANDS[command](message, sender, STATE)
                     if (retval is not None):
-                        # Send message without processing on commands 
-                        self.sendMessage(CHAN, retval, False)
+                        # Send message with appriate processing
+                        self.sendMessage(CHAN, retval, self.botbrain.PROCESSCOMMANDS[command])
                 else:
                     logging.info("Can't find %s()" % command)
 

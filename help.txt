@@ -34,5 +34,8 @@ Special keywords:
 Currently defined commands:
     remember (username) (text to match)
     recall (optional username)
+        Recalls a random quote. If username is specified, returns a quote featuring that username
+    evaluate
+        Returns the latest factoid entered, with keyword processing.
 
 

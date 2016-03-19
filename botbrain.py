@@ -6,7 +6,8 @@ class BotBrain:
     def __init__(self):
         self.memory = Memory()
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
-        self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote }
+        self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, "evaluate" : self.comEvaluate }
+        self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True }
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -57,6 +58,9 @@ class BotBrain:
                     self.memory.addQuote(sender, user, text)
                     return "Ok %s, remembering that %s said '%s'" % (sender, user, text)
         return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
+
+    def comEvaluate(self, message, sender, STATE):
+        return self.memory.getLatestFactoid()
 
     def comFindQuote(self, message, sender, STATE):
         print ("***** comFindQuote %s" % message)
