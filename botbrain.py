@@ -60,6 +60,8 @@ class BotBrain:
         return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
 
     def comEvaluate(self, message, sender, STATE):
+#        if(len(message.split(" ") >= 2)):
+#            return 
         return self.memory.getLatestFactoid()
 
     def comFindQuote(self, message, sender, STATE):

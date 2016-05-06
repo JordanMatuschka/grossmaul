@@ -27,27 +27,35 @@ class GrossmaulBot(pydle.Client):
 
     def sendMessage(self, target, message, processing = True):
         """Customize message sending to allow for keyword parsing"""
+        # Look for a \n that indicates a newline
+        if '\\n' in message:
+            lines = message.split('\\n')
+            for line in lines:
+                self.sendMessage(target, line, processing)
+            return
+                
         # Look for a $ that indicates keywords
         if processing:
-            if '$' in message:
-                # split into words
-                words = message.split()
-                for word in words:
-                    if word.count('$') == 2:
-                        # If there are two $s, keyword is embedded
-                        # eg Abso-$keyword$-lutely!
-                        keyword = word.split('$')[1]
-                        replacement = self.botbrain.findKeyword(keyword.lower())
-                        if (replacement is not None):
-                            message = message.replace('$' + keyword + '$', replacement, 1)
-                    elif word[0] is '$':
-                        # parse into only alphanumeric characters (+ some others)
-                        keyword = ''
-                        for char in word:
-                            if char.isalnum() or char in "-_": keyword += (char)
-                        replacement = self.botbrain.findKeyword(keyword.lower())
-                        if (replacement is not None):
-                            message = message.replace('$' + keyword, replacement, 1)
+            for i in range(3):
+                if '$' in message:
+                    # split into words
+                    words = message.split()
+                    for word in words:
+                        if word.count('$') == 2:
+                            # If there are two $s, keyword is embedded
+                            # eg Abso-$keyword$-lutely!
+                            keyword = word.split('$')[1]
+                            replacement = self.botbrain.findKeyword(keyword.lower())
+                            if (replacement is not None):
+                                message = message.replace('$' + keyword + '$', replacement, 1)
+                        elif word[0] is '$':
+                            # parse into only alphanumeric characters (+ some others)
+                            keyword = ''
+                            for char in word:
+                                if char.isalnum() or char in "-_": keyword += (char)
+                            replacement = self.botbrain.findKeyword(keyword.lower())
+                            if (replacement is not None):
+                                message = message.replace('$' + keyword, replacement, 1)
         
         # If the message starts with /me it is an action, treat accordingly        
         if message.lower().startswith("/me"):
