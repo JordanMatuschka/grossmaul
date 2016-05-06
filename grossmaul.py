@@ -27,12 +27,6 @@ class GrossmaulBot(pydle.Client):
 
     def sendMessage(self, target, message, processing = True):
         """Customize message sending to allow for keyword parsing"""
-        # Look for a \n that indicates a newline
-        if '\\n' in message:
-            lines = message.split('\\n')
-            for line in lines:
-                self.sendMessage(target, line, processing)
-            return
                 
         # Look for a $ that indicates keywords
         if processing:
@@ -61,8 +55,15 @@ class GrossmaulBot(pydle.Client):
         if message.lower().startswith("/me"):
             self.action(target, message[3:].lstrip())
         else:
-            #otherwise simply sent the message
-            self.message(target, message)
+            # Look for a \n that indicates a newline
+            if '\\n' in message:
+                lines = message.split('\\n')
+                for line in lines:
+                    self.sendMessage(target, line, False)
+                return
+            else:
+                #otherwise simply sent the message
+                self.message(target, message)
 
     def action(self, target, message):
         # send a CTCP message that will be interpreted as an action

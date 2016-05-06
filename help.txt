@@ -30,6 +30,10 @@ Example of keyword and factoid operator usage:
 Special keywords:
     $nick is replaced by the user who sent the message
     $user is replaced by a random user who is active in the channel
+    \n is a newline, and will split the reply into multiple lines
+
+    Additionally, up to three passes through keyword processing can happen, so for instance you could define food << $food and $food slurry
+    and it should come out okay.
 
 Currently defined commands:
     remember (username) (text to match)
