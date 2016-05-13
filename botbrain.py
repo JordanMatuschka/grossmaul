@@ -80,8 +80,11 @@ class BotBrain:
             return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
 
     def comEvaluate(self, message, sender, STATE):
+        message = message.rstrip().lstrip()
+        print (message.split(" "))
         if(len(message.split(" ")) >= 2):
-            return ' '.join(message.split(" ")[2:])
+            return ' '.join(message.split(" ")[1:])
+        # if no keyword is passed, just return the latest factoid
         return self.memory.getLatestFactoid()
 
     def comFindQuote(self, message, sender, STATE):
