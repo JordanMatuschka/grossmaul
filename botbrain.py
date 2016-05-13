@@ -44,20 +44,40 @@ class BotBrain:
         # Should be in format 'remember user quote'
         # First strip the 'remember' out
         message = message[len('remember')+1:].lstrip()
-        # extract the username we're looking for
-        targetuser = message.split(" ")[0]
-        # the rest is the text we'll be looking for:
-        targettext = message[len(targetuser):].lstrip().rstrip()
-        print ("TARGETUSER %s :: TARGETTEXT %s" % (targetuser, targettext))
-        # search the buffer for a matching line
+        # We might need to build a multiline quote:
+        quote = ""
+        # Split it by spaces, we're looking for user / word pairs
+        message = message.split()
+        # we'll just say the first one we look up is the 'sender'
+        user = message[0]
+        # remove the 'remember' command so we don't match
+        buff = None
         if(len(STATE['buffer']) > 1):
             buff = STATE['buffer']
             buff.popleft()
+        while(len(message) > 1):
+            # allow for "remember user word user word user word"
+            # extract the username we're looking for
+            targetuser = message.pop(0)
+            # and the word 
+            targettext = message.pop(0)
+
+            print ("TARGETUSER %s :: TARGETTEXT %s" % (targetuser, targettext))
+            # search the buffer for a matching line
             for user, text in buff:
                 if(user == targetuser and targettext in text):
-                    self.memory.addQuote(sender, user, text)
-                    return "Ok %s, remembering that %s said '%s'" % (sender, user, text)
-        return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
+                    print ("found %s" % targettext)
+                    # If there's already something there, make it multiline
+                    if (len(quote) > 0):
+                        quote += '\n' + '<' + targetuser + '> ' + text
+                    else:
+                        quote = text
+        if (len(quote) > 0):
+            # we found something, let's save it                
+            self.memory.addQuote(sender, user, quote)
+            return "Ok %s, remembering that %s said '%s'" % (sender, user, quote)
+        else:
+            return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
 
     def comEvaluate(self, message, sender, STATE):
 #        if(len(message.split(" ") >= 2)):
