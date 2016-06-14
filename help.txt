@@ -41,5 +41,9 @@ Currently defined commands:
         Recalls a random quote. If username is specified, returns a quote featuring that username
     evaluate
         Returns the latest factoid entered, with keyword processing.
+    count (factoid or $keyword to search for)
+        Returns the number of entries for the given factoid or keyword.
+    findfactoid (text to match)
+    findquote (text to match)
 
 

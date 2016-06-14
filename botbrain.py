@@ -6,8 +6,11 @@ class BotBrain:
     def __init__(self):
         self.memory = Memory()
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
-        self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, "evaluate" : self.comEvaluate }
-        self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True }
+        self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
+                    "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
+                    "findquote" : self.comQuoteSearch }
+        self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
+                    "findfactoid" : True, "findquote" : True }
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -55,6 +58,8 @@ class BotBrain:
         if(len(STATE['buffer']) > 1):
             buff = STATE['buffer']
             buff.popleft()
+
+        primaryuser = message[0]
         while(len(message) > 1):
             # allow for "remember user word user word user word"
             # extract the username we're looking for
@@ -72,10 +77,12 @@ class BotBrain:
                         quote += '\n' + '<' + targetuser + '> ' + text
                     else:
                         quote = text
+                    break # break for
+
         if (len(quote) > 0):
             # we found something, let's save it                
-            self.memory.addQuote(sender, user, quote)
-            return "Ok %s, remembering that %s said '%s'" % (sender, user, quote)
+            self.memory.addQuote(sender, primaryuser, quote)
+            return "Ok %s, remembering that %s said '%s'" % (sender, primaryuser, quote)
         else:
             return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
 
@@ -87,6 +94,21 @@ class BotBrain:
         # if no keyword is passed, just return the latest factoid
         return self.memory.getLatestFactoid()
 
+    def comFactoidSearch(self, message, sender, STATE):
+        print ("***** comFactoidSearch%s" % message)
+        trigger = message[len("findfactoid")+1:]
+        query = trigger.rstrip().lstrip()
+        if (len(query) > 0):
+            return self.memory.findFactoid(query)
+
+    def comQuoteSearch(self, message, sender, STATE):
+        print ("***** comQuoteSearch%s" % message)
+        trigger = message[len("findquote")+1:]
+        query = trigger.rstrip().lstrip()
+        if (len(query) > 0):
+            return self.memory.findQuote(query)
+
+
     def comFindQuote(self, message, sender, STATE):
         print ("***** comFindQuote %s" % message)
         trigger = message[len("recall")+1:]
@@ -95,6 +117,16 @@ class BotBrain:
             return self.memory.getQuote(query)
         else:
             return self.memory.getRandomQuote()
+
+
+    def comCount(self, message, sender, STATE):
+        trigger = message[len("count")+1:]
+        query = trigger.rstrip().lstrip()
+        if (len(query) > 0):
+            if(query[0] == '$'):
+                return self.memory.countKeyword(query[1:])
+            else:
+                return self.memory.countFactoid(query)
 
     def stripChars(self, string):
         return ''.join([l for l in string if l.isalnum() or l in ' '])

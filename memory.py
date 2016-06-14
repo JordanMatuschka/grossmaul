@@ -79,6 +79,9 @@ class Memory:
             # Return only the replacement text
             return k.replacement
 
+    def countKeyword(self, keyword):
+        return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
+
     def getLatestFactoid(self):
         # Honestly this isn't prettier than just writing SQL
         print ("******@!@#!@#!@#!@# GET LATEST QUOTE")
@@ -90,9 +93,21 @@ class Memory:
             # Return only the text of the factoid
             return f.quote
 
+    def countFactoid(self, trigger):
+        return "%s count: %s" % (trigger, Factoid.select().where(Factoid.trigger == trigger).count())
+
     def getFactoid(self, trigger):
         # Honestly this isn't prettier than just writing SQL
         for f in Factoid.select().where(Factoid.trigger == trigger).order_by(fn.Rand()).limit(1):
+            # Update statistics 
+            f.timesSeen = f.timesSeen + 1
+            f.lastSeen = datetime.datetime.now()
+            f.save()
+            # Return only the text of the factoid
+            return f.quote
+
+    def findFactoid(self, searchphrase):
+        for f in Factoid.select().where(Factoid.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
             # Update statistics 
             f.timesSeen = f.timesSeen + 1
             f.lastSeen = datetime.datetime.now()
@@ -113,6 +128,15 @@ class Memory:
             # Return the formatted quote
             return "<%s> %s" % (q.trigger, q.quote)
         return "I don't have any quotes for %s." % trigger
+
+    def findQuote(self, searchphrase):
+        for f in Quote.select().where(Quote.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
+            # Update statistics 
+            f.timesSeen = f.timesSeen + 1
+            f.lastSeen = datetime.datetime.now()
+            f.save()
+            # Return only the text of the factoid
+            return f.quote
 
     def getRandomQuote(self):
         for q in Quote.select().order_by(fn.Rand()).limit(1):

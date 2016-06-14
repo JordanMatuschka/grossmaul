@@ -129,7 +129,7 @@ class GrossmaulBot(pydle.Client):
                     retval = self.botbrain.OPERATORS[op](message, sender, STATE)
                     if (retval is not None):
                         # Send message without processing on operators
-                        self.sendMessage(CHAN, retval, False)
+                        self.sendMessage(channel, retval, False)
                     is_op = True
 
             # If it's not an operator, look for a command
@@ -144,7 +144,7 @@ class GrossmaulBot(pydle.Client):
                     retval = self.botbrain.COMMANDS[command](message, sender, STATE)
                     if (retval is not None):
                         # Send message with appriate processing
-                        self.sendMessage(CHAN, retval, self.botbrain.PROCESSCOMMANDS[command])
+                        self.sendMessage(channel, retval, self.botbrain.PROCESSCOMMANDS[command])
                 else:
                     logging.info("Can't find %s()" % command)
 
@@ -153,12 +153,12 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(CHAN, self.preprocess_message(sender, factoid))
+                    self.sendMessage(channel, self.preprocess_message(sender, factoid))
                 else:
                     # If it's not an operator, command, or factoid, look for a __confused response
                     factoid = self.botbrain.findFactoid("__confused")
                     if(factoid is not None):
-                        self.sendMessage(CHAN, factoid)
+                        self.sendMessage(channel, factoid)
 
 
         # If the message is not addressed to the bot, let's look for a factoid
@@ -167,7 +167,7 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(CHAN, self.preprocess_message(sender, factoid))
+                    self.sendMessage(channel, self.preprocess_message(sender, factoid))
 
     def preprocess_message(self, sender, message):
         """ Allow use of $nick and $user keywords in factoids etc """
@@ -180,17 +180,9 @@ class GrossmaulBot(pydle.Client):
 
     def on_private_message(self, sender, message):
         global STATE
-        logging.info("Message received: sender: %s, message: %s" % (sender, message))
-
-
-        # Allow the use of operators in private messages
-        for op in self.botbrain.OPERATORS.keys():
-            if(op in message):
-                logging.info("Operator: %s" % op)
-                # call the appropriate function in the function dictionary
-                retval = self.botbrain.OPERATORS[op](message, sender, STATE)
-                if (retval is not None):
-                    self.sendMessage(sender, retval)
+        logging.info("Private message received: sender: %s, message: %s" % (sender, message))
+        # try to just process everything like a normal message
+        self.on_message(sender, sender, NICK + ': ' + message)
 
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
