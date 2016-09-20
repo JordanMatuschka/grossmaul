@@ -16,6 +16,8 @@ PORT = 6697
 STATE = {
 'counters':  {"__startup":True},
 'buffer': collections.deque(maxlen = 1000),
+'boredom': 0,
+'boredom_limit': 500,
 }
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,7 +28,10 @@ class GrossmaulBot(pydle.Client):
     botbrain = None
 
     def sendMessage(self, target, message, processing = True):
+        global STATE
         """Customize message sending to allow for keyword parsing"""
+        # if we're sending a message we're obviously no longer bored
+        STATE['boredom'] = 0
                 
         # Look for a $ that indicates keywords
         if processing:
@@ -113,6 +118,9 @@ class GrossmaulBot(pydle.Client):
         logging.info("Message received, channel: %s, sender: %s, message: %s" % (channel, sender, message))
         # For now, make sure that the message is addressed to this bot
         if(message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
+            # reset boredom limit when we're addressed
+            STATE['boredom_limit'] = 500
+
             # remove the bot name/bang from the message
             if(message[0] == '!'):
                 message = message[1:]
@@ -144,7 +152,7 @@ class GrossmaulBot(pydle.Client):
                     retval = self.botbrain.COMMANDS[command](message, sender, STATE)
                     if (retval is not None):
                         # Send message with appriate processing
-                        self.sendMessage(channel, retval, self.botbrain.PROCESSCOMMANDS[command])
+                        self.sendMessage(channel, self.preprocess_message(sender, retval), self.botbrain.PROCESSCOMMANDS[command])
                 else:
                     logging.info("Can't find %s()" % command)
 
@@ -158,7 +166,7 @@ class GrossmaulBot(pydle.Client):
                     # If it's not an operator, command, or factoid, look for a __confused response
                     factoid = self.botbrain.findFactoid("__confused")
                     if(factoid is not None):
-                        self.sendMessage(channel, factoid)
+                        self.sendMessage(channel, self.preprocess_message(sender, factoid))
 
 
         # If the message is not addressed to the bot, let's look for a factoid
@@ -179,20 +187,30 @@ class GrossmaulBot(pydle.Client):
         return message
 
     def on_private_message(self, sender, message):
-        global STATE
         logging.info("Private message received: sender: %s, message: %s" % (sender, message))
         # try to just process everything like a normal message
         self.on_message(sender, sender, NICK + ': ' + message)
 
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
+        global STATE 
+
         # Look for pings. TODO: idle processing stuff here.
         if("PING" in "%s" % message): 
             logging.info("PING!")
+
             # make sure db stays available
             if self.botbrain is not None: 
                 self.botbrain.keepConnection()
             
+            # pings are a sign we're getting bored
+            STATE['boredom'] += 1
+            if random.randrange(STATE['boredom_limit']) < STATE['boredom']:
+                # increment the limit so he gets less chatty over time
+                STATE['boredom_limit'] += 100
+                boredthings = ['...', '!fun fact', '!recall', '!youtube me'] 
+                self.on_message(CHAN, CHAN, random.choice(boredthings))
+
         # Let the base client handle the raw stuff
         super(GrossmaulBot, self).on_raw(message)
 
