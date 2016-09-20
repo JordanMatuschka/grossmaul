@@ -17,6 +17,7 @@ class Keyword(Model):
         database = db
 
 class Factoid(Model):
+    id = IntegerField(primary_key=True)
     # Who submitted the factoid
     author = CharField()
     # What will bring up this factoid
@@ -37,6 +38,7 @@ class Factoid(Model):
 # At the moment, Quotes are just factoids kept seperately and treated slightly different
 # This may change when multiline quotes come about
 class Quote(Model):
+    id = IntegerField(primary_key=True)
     # Who submitted the quote
     author = CharField()
     # What will bring up this quote
@@ -112,8 +114,8 @@ class Memory:
             f.timesSeen = f.timesSeen + 1
             f.lastSeen = datetime.datetime.now()
             f.save()
-            # Return only the text of the factoid
-            return f.quote
+            return "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
+        return "I don't have any quotes for %s." % searchphrase
 
     def addQuote(self, author, trigger, quote):
         q = Quote(author=author, trigger=trigger, quote=quote)
@@ -135,8 +137,8 @@ class Memory:
             f.timesSeen = f.timesSeen + 1
             f.lastSeen = datetime.datetime.now()
             f.save()
-            # Return only the text of the factoid
-            return f.quote
+            return "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
+        return "I don't have any quotes for %s." % searchphrase
 
     def getRandomQuote(self):
         for q in Quote.select().order_by(fn.Rand()).limit(1):
