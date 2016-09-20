@@ -67,7 +67,8 @@ class GrossmaulBot(pydle.Client):
                     self.sendMessage(target, line, False)
                 return
             else:
-                #otherwise simply sent the message
+                #otherwise simply add to buffer and send the message
+                STATE['buffer'].appendleft( (NICK, message) )
                 self.message(target, message)
 
     def action(self, target, message):
