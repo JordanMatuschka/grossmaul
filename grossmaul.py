@@ -7,8 +7,8 @@ from types import FunctionType
 from importlib import reload
 
 # Modify these for your own nefarious purposes
-#CHAN = "#thehoppening"
-CHAN = "#thetestening"
+CHAN = "#thehoppening"
+#CHAN = "#thetestening"
 NICK = "BeerRobot"
 HOST = "chat.freenode.net"
 PORT = 6697
