@@ -68,6 +68,16 @@ class Memory:
         self.db.close()
         self.db.connect()
 
+    def deleteFactoid(self, username, id):
+        f = Factoid.get(Factoid.id == id)
+        if (f is not None):
+            ret =  "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
+            if (f.author == username):
+                f.delete_instance()
+                return "Deleted: " + ret
+            return "Unable to delete factoid: " + ret
+        return "Unknown id."
+
     def addFactoid(self, author, trigger, quote):
         f = Factoid(author=author, trigger=trigger, quote=quote)
         f.save()    

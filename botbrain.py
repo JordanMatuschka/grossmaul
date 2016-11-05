@@ -8,9 +8,9 @@ class BotBrain:
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
-                    "findquote" : self.comQuoteSearch }
+                    "findquote" : self.comQuoteSearch, "delete" : self.comDeleteFactoid }
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
-                    "findfactoid" : True, "findquote" : True }
+                    "findfactoid" : False, "findquote" : False, "delete" : False }
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -39,6 +39,12 @@ class BotBrain:
 
     def opIncrement(self, message, sender, STATE):
         print("op_increment")
+
+    def comDeleteFactoid(self, message, sender, STATE):
+        # strip out command
+        message = message[len('delete')+1:].lstrip()
+        return self.memory.deleteFactoid(sender, message)
+
 
     def comRemember(self, message, sender, STATE):
         # TODO: All these prints need be using 'logging'
@@ -141,3 +147,4 @@ class BotBrain:
 
     def findKeyword(self, keyword):
         return self.memory.getKeyword(keyword)    
+

@@ -7,8 +7,8 @@ from types import FunctionType
 from importlib import reload
 
 # Modify these for your own nefarious purposes
-CHAN = "#thehoppening"
-#CHAN = "#thetestening"
+#CHAN = "#thehoppening"
+CHAN = "#thetestening"
 NICK = "BeerRobot"
 HOST = "chat.freenode.net"
 PORT = 6697
@@ -17,7 +17,7 @@ STATE = {
 'counters':  {"__startup":True},
 'buffer': collections.deque(maxlen = 1000),
 'boredom': 0,
-'boredom_limit': 500,
+'boredom_limit': 700,
 }
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -67,8 +67,7 @@ class GrossmaulBot(pydle.Client):
                     self.sendMessage(target, line, False)
                 return
             else:
-                #otherwise simply add to buffer and send the message
-                STATE['buffer'].appendleft( (NICK, message) )
+                #otherwise simply sent the message
                 self.message(target, message)
 
     def action(self, target, message):
@@ -106,8 +105,9 @@ class GrossmaulBot(pydle.Client):
 
         # make sure the username is initialized for counter use
         if(sender not in STATE['counters'].keys()): 
-            logging.info("Adding %s key to STATE['counters']" % sender)
-            STATE['counters'][sender] = {}
+            if(sender != CHAN):
+                logging.info("Adding %s key to STATE['counters']" % sender)
+                STATE['counters'][sender] = {}
 
         # Filter out private messages, those will be handled in on_private_message
         if(channel == NICK): return
@@ -120,7 +120,7 @@ class GrossmaulBot(pydle.Client):
         # For now, make sure that the message is addressed to this bot
         if(message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
             # reset boredom limit when we're addressed
-            STATE['boredom_limit'] = 500
+            STATE['boredom_limit'] = 700
 
             # remove the bot name/bang from the message
             if(message[0] == '!'):
@@ -208,8 +208,8 @@ class GrossmaulBot(pydle.Client):
             STATE['boredom'] += 1
             if random.randrange(STATE['boredom_limit']) < STATE['boredom']:
                 # increment the limit so he gets less chatty over time
-                STATE['boredom_limit'] += 300
-                boredthings = ['...', '!fun fact', '!recall', '!youtube me'] 
+                STATE['boredom_limit'] += 500
+                boredthings = ['...', '...', '!fun fact', '!recall', '!youtube me', 'office quotes']
                 self.on_message(CHAN, CHAN, random.choice(boredthings))
 
         # Let the base client handle the raw stuff
