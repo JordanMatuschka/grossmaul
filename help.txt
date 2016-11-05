@@ -45,6 +45,6 @@ Currently defined commands:
         Returns the number of entries for the given factoid or keyword.
     findfactoid (text to match)
     findquote (text to match)
-    delte (id to delete)
+    delete (id to delete)
 
 
