@@ -21,7 +21,7 @@ STATE = {
 }
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='log.txt')
 
 class GrossmaulBot(pydle.Client):
     """  """
@@ -40,14 +40,17 @@ class GrossmaulBot(pydle.Client):
                     # split into words
                     words = message.split()
                     for word in words:
-                        if word.count('$') == 2:
+                        for i in range(word.count('$') // 2):
                             # If there are two $s, keyword is embedded
                             # eg Abso-$keyword$-lutely!
-                            keyword = word.split('$')[1]
+                            keyword = word.split('$')[1+(i*2)]
                             replacement = self.botbrain.findKeyword(keyword.lower())
                             if (replacement is not None):
                                 message = message.replace('$' + keyword + '$', replacement, 1)
-                        elif word[0] is '$':
+                            else:
+                                message = message.replace('$' + keyword + '$', keyword, 1)
+
+                        if word[0] is '$':
                             # parse into only alphanumeric characters (+ some others)
                             keyword = ''
                             for char in word:
@@ -67,7 +70,9 @@ class GrossmaulBot(pydle.Client):
                     self.sendMessage(target, line, False)
                 return
             else:
-                #otherwise simply sent the message
+                #otherwise simply log and send the message
+                STATE['buffer'].appendleft( (NICK, message) )
+                logging.info("Sending message to %s: %s" % (target, message))
                 self.message(target, message)
 
     def action(self, target, message):
@@ -117,21 +122,25 @@ class GrossmaulBot(pydle.Client):
         STATE['buffer'].appendleft( (sender, message) )
 
         logging.info("Message received, channel: %s, sender: %s, message: %s" % (channel, sender, message))
-        # For now, make sure that the message is addressed to this bot
-        if(message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
+        # For now, make sure that the message is addressed to this bot or is an operator
+        is_op = False
+        for op in self.botbrain.OPERATORS.keys():
+            if(op in message):
+                is_op = True
+        if(is_op or message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
             # reset boredom limit when we're addressed
             STATE['boredom_limit'] = 700
 
             # remove the bot name/bang from the message
             if(message[0] == '!'):
                 message = message[1:]
-            else:
+            elif(NICK.lower() == message[:len(NICK)].lower()):
                 message = message[len(NICK)+1:]
 
             # Parse for special operators
-            is_op = False
             is_command = False
             for op in self.botbrain.OPERATORS.keys():
+                logging.info("Checking for operator: " + op)
                 if(op in message):
                     logging.info("Operator: %s" % op)
                     # call the appropriate function in the function dictionary
