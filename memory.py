@@ -6,6 +6,7 @@ from memoryconfig import db
 
 class Keyword(Model):
     """Datatype to allow simple text replacement"""
+    id = IntegerField(primary_key=True)
     # Who submitted the Keyword
     author = CharField()
     # Keyword to find in text
@@ -69,6 +70,7 @@ class Memory:
         self.db.connect()
 
     def deleteFactoid(self, username, id):
+        logging.info("Memory - deleteFactoid")
         f = Factoid.get(Factoid.id == id)
         if (f is not None):
             ret =  "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
@@ -78,25 +80,40 @@ class Memory:
             return "Unable to delete factoid: " + ret
         return "Unknown id."
 
+    def deleteKeyword(self, username, id):
+        logging.info("Memory - deleteKeyword")
+        k = Keyword.get(Keyword.id == id)
+        if (k is not None):
+            ret =  "({}, {}) {} - {}".format(k.author, k.id, k.keyword, k.replacement)
+            if (k.author == username):
+                k.delete_instance()
+                return "Deleted: " + ret
+            return "Unable to delete keyword: " + ret
+        return "Unknown id."
+
     def addFactoid(self, author, trigger, quote):
+        logging.info("Memory - addFactoid")
         f = Factoid(author=author, trigger=trigger, quote=quote)
         f.save()    
 
     def addKeyword(self, author, keyword, replacement):
+        logging.info("Memory - addKeyword")
         k = Keyword(author=author, keyword=keyword, replacement=replacement)
         k.save()    
 
     def getKeyword(self, keyword):
+        logging.info("Memory - getKeyword")
         for k in Keyword.select().where(Keyword.keyword == keyword).order_by(fn.Rand()).limit(1):
             # Return only the replacement text
             return k.replacement
 
     def countKeyword(self, keyword):
+        logging.info("Memory - countKeyword")
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
 
     def getLatestFactoid(self):
+        logging.info("Memory - getLatestFactoid")
         # Honestly this isn't prettier than just writing SQL
-        print ("******@!@#!@#!@#!@# GET LATEST QUOTE")
         for f in Factoid.select().order_by(Factoid.id.desc()).limit(1):
             # Update statistics 
             f.timesSeen = f.timesSeen + 1
@@ -106,9 +123,11 @@ class Memory:
             return f.quote
 
     def countFactoid(self, trigger):
+        logging.info("Memory - countFactoid")
         return "%s count: %s" % (trigger, Factoid.select().where(Factoid.trigger == trigger).count())
 
     def getFactoid(self, trigger):
+        logging.info("Memory - getFactoid")
         # Honestly this isn't prettier than just writing SQL
         for f in Factoid.select().where(Factoid.trigger == trigger).order_by(fn.Rand()).limit(1):
             # Update statistics 
@@ -118,7 +137,14 @@ class Memory:
             # Return only the text of the factoid
             return f.quote
 
+    def findKeyword(self, searchphrase):
+        logging.info("Memory - findKeyword")
+        for k in Keyword.select().where(Keyword.replacement.contains(searchphrase)).order_by(fn.Rand()).limit(1):
+            return "({}, {}) {} - {}".format(k.author, k.id, k.keyword, k.replacement)
+        return "I don't have any keywords like %s." % searchphrase
+
     def findFactoid(self, searchphrase):
+        logging.info("Memory - findFactoid")
         for f in Factoid.select().where(Factoid.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
             # Update statistics 
             f.timesSeen = f.timesSeen + 1
@@ -128,10 +154,12 @@ class Memory:
         return "I don't have any quotes for %s." % searchphrase
 
     def addQuote(self, author, trigger, quote):
+        logging.info("Memory - addQuote")
         q = Quote(author=author, trigger=trigger, quote=quote)
         q.save()    
 
     def getQuote(self, trigger):
+        logging.info("Memory - getQuote")
         for q in Quote.select().where(Quote.trigger == trigger).order_by(fn.Rand()).limit(1):
             # Update statistics 
             q.timesSeen = q.timesSeen + 1
@@ -142,6 +170,7 @@ class Memory:
         return "I don't have any quotes for %s." % trigger
 
     def findQuote(self, searchphrase):
+        logging.info("Memory - findQuote")
         for f in Quote.select().where(Quote.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
             # Update statistics 
             f.timesSeen = f.timesSeen + 1
@@ -151,6 +180,7 @@ class Memory:
         return "I don't have any quotes for %s." % searchphrase
 
     def getRandomQuote(self):
+        logging.info("Memory - getRandomQuote")
         for q in Quote.select().order_by(fn.Rand()).limit(1):
             # Update statistics 
             q.timesSeen = q.timesSeen + 1

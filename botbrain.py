@@ -1,5 +1,6 @@
 from memory import Memory
 from importlib import reload
+import logging
 
 class BotBrain:
 
@@ -8,16 +9,17 @@ class BotBrain:
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
-                    "findquote" : self.comQuoteSearch, "delete" : self.comDeleteFactoid }
+                    "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
+                    "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword }
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
-                    "findfactoid" : False, "findquote" : False, "delete" : False }
+                    "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
+                    "deletekeyword" : False }
  
     def keepConnection(self):
         self.memory.keepConnection()
 
     def opDefineKeyword(self, message, sender, STATE):
-        print("opDefineKeyword")
-        print("Message: %s Sender: %s" % (message, sender))
+        logging.info("opDefineKeyword-  Message: %s Sender: %s" % (message, sender))
         message = message.split("<<")
         if(len(message) >= 2):
             keyword = message[0].lower().rstrip().lstrip()
@@ -26,30 +28,32 @@ class BotBrain:
             return "Ok %s, remembering %s is a %s" % (sender, replacement, keyword)
 
     def opDefine(self, message, sender, STATE):
-        print("op_define")
-        print("Message: %s Sender: %s" % (message, sender))
+        logging.info("opDefine-  Message: %s Sender: %s" % (message, sender))
         message = message.split(":=")
         if(len(message) >= 2):
             trigger = message[0].lower().rstrip().lstrip()
-            print ("trigger = ", trigger)
             factoid = message[1].rstrip().lstrip()
-            print ("factoid = ", factoid)
             self.memory.addFactoid(sender, trigger, factoid)
             return "Ok %s, remembering %s -> %s" % (sender, trigger, factoid)
 
     def opIncrement(self, message, sender, STATE):
-        print("op_increment")
+        logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
+
+    def comDeleteKeyword(self, message, sender, STATE):
+        logging.info("comDeleteKeyword-  Message: %s Sender: %s" % (message, sender))
+        # strip out command
+        message = message[len('deletekeyword')+1:].lstrip()
+        return self.memory.deleteKeyword(sender, message)
 
     def comDeleteFactoid(self, message, sender, STATE):
+        logging.info("comDeleteFactoid-  Message: %s Sender: %s" % (message, sender))
         # strip out command
         message = message[len('delete')+1:].lstrip()
         return self.memory.deleteFactoid(sender, message)
 
 
     def comRemember(self, message, sender, STATE):
-        # TODO: All these prints need be using 'logging'
-        # of course, half of this output shouldn't be there anyway
-
+        logging.info("comRemember-  Message: %s Sender: %s" % (message, sender))
         # Should be in format 'remember user quote'
         # First strip the 'remember' out
         message = message[len('remember')+1:].lstrip()
@@ -73,11 +77,9 @@ class BotBrain:
             # and the word 
             targettext = message.pop(0)
 
-            print ("TARGETUSER %s :: TARGETTEXT %s" % (targetuser, targettext))
             # search the buffer for a matching line
             for user, text in buff:
                 if(user == targetuser and targettext in text):
-                    print ("found %s" % targettext)
                     # If there's already something there, make it multiline
                     if (len(quote) > 0):
                         quote += '\n' + '<' + targetuser + '> ' + text
@@ -93,22 +95,29 @@ class BotBrain:
             return "Sorry %s, I couldn't find %s in my logs" % (sender, targettext)
 
     def comEvaluate(self, message, sender, STATE):
+        logging.info("comEvaluate-  Message: %s Sender: %s" % (message, sender))
         message = message.rstrip().lstrip()[:255]
-        print (message.split(" "))
         if(len(message.split(" ")) >= 2):
             return ' '.join(message.split(" ")[1:])
         # if no keyword is passed, just return the latest factoid
         return self.memory.getLatestFactoid()
 
     def comFactoidSearch(self, message, sender, STATE):
-        print ("***** comFactoidSearch%s" % message)
+        logging.info("comFactoidSearch-  Message: %s Sender: %s" % (message, sender))
         trigger = message[len("findfactoid")+1:]
         query = trigger.rstrip().lstrip()
         if (len(query) > 0):
             return self.memory.findFactoid(query)
 
+    def comKeywordSearch(self, message, sender, STATE):
+        logging.info("comKeywordSearch-  Message: %s Sender: %s" % (message, sender))
+        trigger = message[len("findkeyword")+1:]
+        query = trigger.rstrip().lstrip()
+        if (len(query) > 0):
+            return self.memory.findKeyword(query)
+
     def comQuoteSearch(self, message, sender, STATE):
-        print ("***** comQuoteSearch%s" % message)
+        logging.info("comQuoteSearch-  Message: %s Sender: %s" % (message, sender))
         trigger = message[len("findquote")+1:]
         query = trigger.rstrip().lstrip()
         if (len(query) > 0):
@@ -116,7 +125,7 @@ class BotBrain:
 
 
     def comFindQuote(self, message, sender, STATE):
-        print ("***** comFindQuote %s" % message)
+        logging.info("comFindQuote-  Message: %s Sender: %s" % (message, sender))
         trigger = message[len("recall")+1:]
         query = trigger.rstrip().lstrip()
         if (len(query) > 0):
@@ -126,6 +135,7 @@ class BotBrain:
 
 
     def comCount(self, message, sender, STATE):
+        logging.info("comCount-  Message: %s Sender: %s" % (message, sender))
         trigger = message[len("count")+1:]
         query = trigger.rstrip().lstrip()
         if (len(query) > 0):
@@ -138,6 +148,7 @@ class BotBrain:
         return ''.join([l for l in string if l.isalnum() or l in ' '])
 
     def findFactoid(self, trigger):
+        logging.info("findFactoid-  trigger: %s" % (trigger))
         ret = self.memory.getFactoid(trigger)
         if (ret is not None):
             return ret
@@ -146,5 +157,6 @@ class BotBrain:
             return self.memory.getFactoid(self.stripChars(trigger))
 
     def findKeyword(self, keyword):
+        logging.info("findKeyword-  keyword: %s" % (keyword))
         return self.memory.getKeyword(keyword)    
 
