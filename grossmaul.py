@@ -98,11 +98,33 @@ class GrossmaulBot(pydle.Client):
             if (NICK != user):
                 NICK = user
                 logging.info("Changing internal NICK to %s" % NICK)
+
+    def on_ctcp(self, by, target, what, contents):
+        """Callback when client receives ctcp data"""
+        logging.info("CTCP: by: %s - target: %s - what: %s - contents: %s" % (by, target, what, contents))
         
 
     def on_unknown(self, message):
         """Callback when client receives unknown data"""
         logging.warning("Client received unknown data: %s" % message)
+
+    def on_nick_change(self, old, new):
+        """Callback when a user changes nicknames"""
+        global STATE
+        global NICK
+        if (NICK != old and NICK != new and old != '<unregistered>'):
+            logging.info("Changing user counters from %s to %s" % (old, new))
+            if(old in STATE['counters'].keys()):
+                STATE['counters'][new] = STATE['counters'][old]
+                del STATE['counters'][old]
+            else:
+                STATE['counters'][new] = {}
+
+    def on_part(self, channel, user, message=None):
+        """"Remove counters on part, thus removing user from random $user choice"""
+        if(user in STATE['counters'].keys()):
+            logging.info("Removing user counters for %s " % user)
+            del STATE['counters'][user]
 
     def on_message(self, channel, sender, message):
         """Callback called when the client received a message."""
@@ -140,7 +162,6 @@ class GrossmaulBot(pydle.Client):
             # Parse for special operators
             is_command = False
             for op in self.botbrain.OPERATORS.keys():
-                logging.info("Checking for operator: " + op)
                 if(op in message):
                     logging.info("Operator: %s" % op)
                     # call the appropriate function in the function dictionary
