@@ -21,7 +21,7 @@ STATE = {
 }
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='log.txt')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=CHAN[1:]+'log.txt')
 
 class GrossmaulBot(pydle.Client):
     """  """
@@ -214,7 +214,8 @@ class GrossmaulBot(pydle.Client):
         # First allow the bot to address who it's responding to via $nick
         message = message.replace("$nick", sender)        
         # replace any instances of $user with a random username from STATE 
-        message = message.replace("$user", random.choice(list(STATE['counters'].keys())))
+        if (len(list(STATE['counters'].keys())) > 0):
+            message = message.replace("$user", random.choice(list(STATE['counters'].keys())))
         return message
 
     def on_private_message(self, sender, message):
@@ -233,6 +234,10 @@ class GrossmaulBot(pydle.Client):
             # make sure db stays available
             if self.botbrain is not None: 
                 self.botbrain.keepConnection()
+                
+            # check for new messages
+            for message in self.botbrain.getMessages():
+                self.sendMessage(CHAN, self.preprocess_message(NICK, message))
             
             # pings are a sign we're getting bored
             STATE['boredom'] += 1

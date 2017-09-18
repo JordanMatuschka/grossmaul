@@ -17,6 +17,17 @@ class Keyword(Model):
         global db
         database = db
 
+class Message(Model):
+    id = IntegerField(primary_key=True)
+    # Message to be sent to channel
+    message = CharField()
+    # When should it be displayed
+    triggerTime = DateTimeField(default=datetime.datetime.now)
+    timesSeen = IntegerField(default = 0)
+    class Meta:
+        global db
+        database = db
+
 class Factoid(Model):
     id = IntegerField(primary_key=True)
     # Who submitted the factoid
@@ -101,6 +112,11 @@ class Memory:
         k = Keyword(author=author, keyword=keyword, replacement=replacement)
         k.save()    
 
+    def addReminder(self, message, timestamp):
+        logging.info("Memory - addReminder")
+        r = Message(message=message, triggerTime=timestamp, timesSeen=0)
+        r.save()    
+
     def getKeyword(self, keyword):
         logging.info("Memory - getKeyword")
         for k in Keyword.select().where(Keyword.keyword == keyword).order_by(fn.Rand()).limit(1):
@@ -110,6 +126,22 @@ class Memory:
     def countKeyword(self, keyword):
         logging.info("Memory - countKeyword")
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
+
+    def getMessages(self):
+        logging.info("Memory - getMessages")
+
+        messages = []
+        for m in Message.select().where(
+                (Message.timesSeen == 0) & 
+                (Message.triggerTime < datetime.datetime.now())
+            ):
+            # Update statistics 
+            m.timesSeen = m.timesSeen + 1
+            m.save()
+            # Return only the message
+            messages.append(m.message)
+             
+        return messages
 
     def getLatestFactoid(self):
         logging.info("Memory - getLatestFactoid")
@@ -147,10 +179,7 @@ class Memory:
         logging.info("Memory - findFactoid")
         for f in Factoid.select().where(Factoid.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
             # Update statistics 
-            f.timesSeen = f.timesSeen + 1
-            f.lastSeen = datetime.datetime.now()
-            f.save()
-            return "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
+            return "({}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timesSeen, f.trigger, f.quote)
         return "I don't have any quotes for %s." % searchphrase
 
     def addQuote(self, author, trigger, quote):
@@ -172,11 +201,7 @@ class Memory:
     def findQuote(self, searchphrase):
         logging.info("Memory - findQuote")
         for f in Quote.select().where(Quote.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
-            # Update statistics 
-            f.timesSeen = f.timesSeen + 1
-            f.lastSeen = datetime.datetime.now()
-            f.save()
-            return "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
+            return "({}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timesSeen, f.trigger, f.quote)
         return "I don't have any quotes for %s." % searchphrase
 
     def getRandomQuote(self):

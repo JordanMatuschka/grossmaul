@@ -1,12 +1,14 @@
 from memory import Memory
 from importlib import reload
 import logging
+import time
 
 class BotBrain:
 
     def __init__(self):
         self.memory = Memory()
-        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement}
+        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement,
+                          "@@" : self.opReminder }
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
@@ -17,6 +19,32 @@ class BotBrain:
  
     def keepConnection(self):
         self.memory.keepConnection()
+
+    def opReminder(self, message, sender, STATE):
+        """ Set a reminder in the form of {message} @@ {timestamp} """
+        logging.info("opReminder-  Message: %s Sender: %s" % (message, sender))
+        message = message.split("@@")
+        if(len(message) == 2):
+            reminder = message[0].rstrip().lstrip()
+            timestamp = message[1].lower().rstrip().lstrip()
+            if(' ' in timestamp):
+                (d, t) = timestamp.split()
+            else:
+                d = time.strftime("%Y-%m-%d")
+                t = timestamp
+            
+            if('pm' in t):
+                # remove the pm
+                t = t.split("pm")[0] 
+                # add to hours
+                t = t.split(":")
+                t[0] = str(int(t[0]) + 12)
+                t = ":".join(t)
+            timestamp = d + " " + t
+
+            self.memory.addReminder("< " + sender + "> " + reminder, timestamp)
+            return "Ok %s, reminder set for %s" % (sender, timestamp)
+
 
     def opDefineKeyword(self, message, sender, STATE):
         logging.info("opDefineKeyword-  Message: %s Sender: %s" % (message, sender))
@@ -160,3 +188,5 @@ class BotBrain:
         logging.info("findKeyword-  keyword: %s" % (keyword))
         return self.memory.getKeyword(keyword)    
 
+    def getMessages(self):
+        return self.memory.getMessages()    
