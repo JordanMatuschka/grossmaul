@@ -2,6 +2,7 @@ import pydle
 import logging
 import collections
 import random
+import pickle
 from botbrain import BotBrain
 from types import FunctionType
 from importlib import reload
@@ -32,7 +33,8 @@ class GrossmaulBot(pydle.Client):
         """Customize message sending to allow for keyword parsing"""
         # if we're sending a message we're obviously no longer bored
         STATE['boredom'] = 0
-                
+        message = message.lstrip().rstrip()
+
         # Look for a $ that indicates keywords
         if processing:
             for i in range(3):
@@ -95,9 +97,12 @@ class GrossmaulBot(pydle.Client):
         # If "__startup" is still in STATE['counters'], we will use user as the new NICK
         if("__startup" in STATE['counters']):
             del STATE['counters']["__startup"]
+            
             if (NICK != user):
                 NICK = user
                 logging.info("Changing internal NICK to %s" % NICK)
+        # load saved counters to await users
+        self.load_counters()
 
     def on_ctcp(self, by, target, what, contents):
         """Callback when client receives ctcp data"""
@@ -109,7 +114,7 @@ class GrossmaulBot(pydle.Client):
         logging.warning("Client received unknown data: %s" % message)
 
     def on_nick_change(self, old, new):
-        """Callback when a user changes nicknames"""
+        """Callback when a user changes nicknames: keep counter keys up to date"""
         global STATE
         global NICK
         if (NICK != old and NICK != new and old != '<unregistered>'):
@@ -132,9 +137,13 @@ class GrossmaulBot(pydle.Client):
 
         # make sure the username is initialized for counter use
         if(sender not in STATE['counters'].keys()): 
-            if(sender != CHAN):
+            if(CHAN.lower() not in sender.lower()):
                 logging.info("Adding %s key to STATE['counters']" % sender)
                 STATE['counters'][sender] = {}
+                if(sender in STATE['_counters'].keys()):
+                    # restore old counters
+                    STATE['counters'][sender] = STATE['_counters'][sender]
+                    del STATE['_counters'][sender]
 
         # Filter out private messages, those will be handled in on_private_message
         if(channel == NICK): return
@@ -146,9 +155,21 @@ class GrossmaulBot(pydle.Client):
         logging.info("Message received, channel: %s, sender: %s, message: %s" % (channel, sender, message))
         # For now, make sure that the message is addressed to this bot or is an operator
         is_op = False
-        for op in self.botbrain.OPERATORS.keys():
-            if(op in message):
-                is_op = True
+        found_op = False
+        logging.info("Testing for operators:")
+
+        for word in message.split(' '):
+            logging.info("testing for operators in %s" % word)
+            for op in self.botbrain.OPERATORS.keys():
+                if(op in word):
+                    logging.info("Found %s in %s" % (op, word))
+                    if(word not in STATE['counters'].keys() and word not in STATE['_counters'].keys()):
+                        logging.info("Not found in %s" % (STATE['_counters'].keys()))
+                        is_op = True
+                        found_op = op
+                    else:
+                        logging.info("%s is in counters" % (word))
+
         if(is_op or message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
             # reset boredom limit when we're addressed
             STATE['boredom_limit'] = 700
@@ -161,15 +182,14 @@ class GrossmaulBot(pydle.Client):
 
             # Parse for special operators
             is_command = False
-            for op in self.botbrain.OPERATORS.keys():
-                if(op in message):
-                    logging.info("Operator: %s" % op)
-                    # call the appropriate function in the function dictionary
-                    retval = self.botbrain.OPERATORS[op](message, sender, STATE)
-                    if (retval is not None):
-                        # Send message without processing on operators
-                        self.sendMessage(channel, retval, False)
-                    is_op = True
+            # for op in self.botbrain.OPERATORS.keys():
+            if (is_op):
+                logging.info("Operator: %s" % found_op)
+                # call the appropriate function in the function dictionary
+                retval = self.botbrain.OPERATORS[found_op](message, sender, STATE)
+                if (retval is not None):
+                    # Send message without processing on operators
+                    self.sendMessage(channel, retval, False)
 
             # If it's not an operator, look for a command
             if(not is_op):
@@ -223,11 +243,22 @@ class GrossmaulBot(pydle.Client):
         # try to just process everything like a normal message
         self.on_message(sender, sender, NICK + ': ' + message)
 
+    def save_counters(self):
+        """Persist counters to file"""
+        global STATE 
+        if (len(list(STATE['counters'].keys())) > 0):
+            pickle.dump(STATE['counters'], open('counters.p', 'wb'))
+
+    def load_counters(self):
+        """Load saved counters to a hidden state variable"""
+        global STATE 
+        STATE['_counters'] = pickle.load(open('counters.p', 'rb'))
+
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
         global STATE 
 
-        # Look for pings. TODO: idle processing stuff here.
+        # Look for pings. All idle processing stuff goes here.
         if("PING" in "%s" % message): 
             logging.info("PING!")
 
@@ -239,6 +270,9 @@ class GrossmaulBot(pydle.Client):
             for message in self.botbrain.getMessages():
                 self.sendMessage(CHAN, self.preprocess_message(NICK, message))
             
+            # save current counters to file
+            self.save_counters()
+
             # pings are a sign we're getting bored
             STATE['boredom'] += 1
             if random.randrange(STATE['boredom_limit']) < STATE['boredom']:
