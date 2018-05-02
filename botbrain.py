@@ -84,7 +84,14 @@ class BotBrain:
         logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
         if(len(message.split("++")[1]) > 0):
             return
+
         message = message.split("++")[0].strip()
+
+        # Allow 'targeting' counters with dot notation
+        if ("." in message):
+            sender = message.split(".")[0]
+            message = message.split(".")[1]
+
         if(message in STATE['counters'][sender].keys()):
             STATE['counters'][sender][message] += 1
         else:
@@ -96,6 +103,12 @@ class BotBrain:
         if(len(message.split("--")[1]) > 0):
             return
         message = message.split("--")[0].strip()
+
+        # Allow 'targeting' counters with dot notation
+        if ("." in message):
+            sender = message.split(".")[0]
+            message = message.split(".")[1]
+
         if(message in STATE['counters'][sender].keys()):
             STATE['counters'][sender][message] -= 1
             if(STATE['counters'][sender][message] <= 0):
