@@ -93,7 +93,7 @@ class BotBrain:
 
         if (delim == "+="):
             inc = int(message.split(delim)[1].strip())
-            message = message.split(delim)[0]
+            message = message.split(delim)[0].strip()
         else:
             inc = 1
             message = message.split(delim)[0].strip()
@@ -124,7 +124,7 @@ class BotBrain:
 
         if (delim == "-="):
             dec = int(message.split(delim)[1].strip())
-            message = message.split(delim)[0]
+            message = message.split(delim)[0].strip()
         else:
             dec = 1
             message = message.split(delim)[0].strip()
