@@ -10,6 +10,9 @@ Parsing order:
 Currently defined operators:
     := define a factoid
     << add to keyword set
+	++ add to a counter
+	-- decrement a counter
+	@@ schedule a message
 
 Example of keyword and factoid operator usage:
 

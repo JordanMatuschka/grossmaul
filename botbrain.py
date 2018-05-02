@@ -7,8 +7,8 @@ class BotBrain:
 
     def __init__(self):
         self.memory = Memory()
-        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement,
-                          "--" : self.opDecrement, "@@" : self.opReminder }
+        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement, "+=" : self.opIncrement,
+                          "--" : self.opDecrement, "-=" : self.opDecrement, "@@" : self.opReminder }
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
@@ -82,27 +82,52 @@ class BotBrain:
 
     def opIncrement(self, message, sender, STATE):
         logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
-        if(len(message.split("++")[1]) > 0):
+        if ("++" in message):
+            delim = "++"
+        else:
+            delim = "+="
+        logging.info("delim - %s" % (delim))
+
+        if(delim == "++" and len(message.split("++")[1]) > 0):
             return
 
-        message = message.split("++")[0].strip()
+        if (delim == "+="):
+            inc = int(message.split(delim)[1].strip())
+            message = message.split(delim)[0]
+        else:
+            inc = 1
+            message = message.split(delim)[0].strip()
 
         # Allow 'targeting' counters with dot notation
         if ("." in message):
             sender = message.split(".")[0]
             message = message.split(".")[1]
 
+
         if(message in STATE['counters'][sender].keys()):
-            STATE['counters'][sender][message] += 1
+            STATE['counters'][sender][message] += inc 
         else:
-            STATE['counters'][sender][message] = 1
+            STATE['counters'][sender][message] = inc
+
         return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
         
     def opDecrement(self, message, sender, STATE):
         logging.info("opDecrement-  Message: %s Sender: %s" % (message, sender))
-        if(len(message.split("--")[1]) > 0):
+        if ("--" in message):
+            delim = "--"
+        else:
+            delim = "-="
+        logging.info("delim - %s" % (delim))
+
+        if(delim == '--' and len(message.split("--")[1]) > 0):
             return
-        message = message.split("--")[0].strip()
+
+        if (delim == "-="):
+            dec = int(message.split(delim)[1].strip())
+            message = message.split(delim)[0]
+        else:
+            dec = 1
+            message = message.split(delim)[0].strip()
 
         # Allow 'targeting' counters with dot notation
         if ("." in message):
@@ -110,7 +135,7 @@ class BotBrain:
             message = message.split(".")[1]
 
         if(message in STATE['counters'][sender].keys()):
-            STATE['counters'][sender][message] -= 1
+            STATE['counters'][sender][message] -= dec 
             if(STATE['counters'][sender][message] <= 0):
                 # Remove from list if we go to 0
                 del STATE['counters'][sender][message]
