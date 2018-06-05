@@ -7,15 +7,16 @@ class BotBrain:
 
     def __init__(self):
         self.memory = Memory()
-        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement,
-                          "@@" : self.opReminder }
+        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement, "+=" : self.opIncrement,
+                          "--" : self.opDecrement, "-=" : self.opDecrement, "@@" : self.opReminder }
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
-                    "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword }
+                    "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword,
+                    "vardump" : self.comVardump}
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
                     "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
-                    "deletekeyword" : False }
+                    "deletekeyword" : False, 'vardump' : False }
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -42,7 +43,7 @@ class BotBrain:
                 t = ":".join(t)
             timestamp = d + " " + t
 
-            self.memory.addReminder("< " + sender + "> " + reminder, timestamp)
+            self.memory.addReminder("[ " + sender + "] " + reminder, timestamp)
             return "Ok %s, reminder set for %s" % (sender, timestamp)
 
 
@@ -64,8 +65,88 @@ class BotBrain:
             self.memory.addFactoid(sender, trigger, factoid)
             return "Ok %s, remembering %s -> %s" % (sender, trigger, factoid)
 
+    def comVardump(self, message, sender, STATE):
+        logging.info("comVardump-  Message: %s Sender: %s" % (message, sender))
+        # Look for a target parameter
+        message = message.split()
+        if(len(message) == 2):
+            logging.info("Looking for %s in counter keys" % message[1])
+            if (message[1] in STATE['counters'].keys()):
+                logging.info("Found %s in counter keys" % message[1])
+                return "%s" % STATE['counters'][message[1]]
+            else:
+                return "I can't find any counters for %s" % message[1]
+        else: 
+            # If nothing else, return the sender's state
+            return "%s" % STATE['counters'][sender]
+
     def opIncrement(self, message, sender, STATE):
         logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
+        if ("++" in message):
+            delim = "++"
+        else:
+            delim = "+="
+        logging.info("delim - %s" % (delim))
+
+        if(delim == "++" and len(message.split("++")[1]) > 0):
+            return
+
+        if (delim == "+="):
+            inc = int(message.split(delim)[1].strip())
+            message = message.split(delim)[0].strip()
+        else:
+            inc = 1
+            message = message.split(delim)[0].strip()
+
+        # Allow 'targeting' counters with dot notation
+        if ("." in message):
+            sender = message.split(".")[0]
+            message = message.split(".")[1]
+
+
+        if(message in STATE['counters'][sender].keys()):
+            STATE['counters'][sender][message] += inc 
+        else:
+            STATE['counters'][sender][message] = inc
+
+        return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
+        
+    def opDecrement(self, message, sender, STATE):
+        logging.info("opDecrement-  Message: %s Sender: %s" % (message, sender))
+        if ("--" in message):
+            delim = "--"
+        else:
+            delim = "-="
+        logging.info("delim - %s" % (delim))
+
+        if(delim == '--' and len(message.split("--")[1]) > 0):
+            return
+
+        if (delim == "-="):
+            dec = int(message.split(delim)[1].strip())
+            message = message.split(delim)[0].strip()
+        else:
+            dec = 1
+            message = message.split(delim)[0].strip()
+
+        # Allow 'targeting' counters with dot notation
+        if ("." in message):
+            sender = message.split(".")[0]
+            message = message.split(".")[1]
+
+        if(message in STATE['counters'][sender].keys()):
+            STATE['counters'][sender][message] -= dec 
+            if(STATE['counters'][sender][message] <= 0):
+                # Remove from list if we go to 0
+                del STATE['counters'][sender][message]
+        else:
+            return "I can't find that counter."
+
+        if(message in STATE['counters'][sender].keys()):
+            return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
+        else:
+            return "Counter removed."
+        
 
     def comDeleteKeyword(self, message, sender, STATE):
         logging.info("comDeleteKeyword-  Message: %s Sender: %s" % (message, sender))

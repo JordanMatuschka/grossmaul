@@ -10,6 +10,9 @@ Parsing order:
 Currently defined operators:
     := define a factoid
     << add to keyword set
+	++ add to a counter
+	-- decrement a counter
+	@@ schedule a message
 
 Example of keyword and factoid operator usage:
 
@@ -45,6 +48,8 @@ Currently defined commands:
         Returns the number of entries for the given factoid or keyword.
     findfactoid (text to match)
     findquote (text to match)
+    findkeyword (text to match)
     delete (id to delete)
+    deletekeyword (id to delete)
 
 
