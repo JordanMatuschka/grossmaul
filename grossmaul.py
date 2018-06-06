@@ -3,6 +3,7 @@ import logging
 import collections
 import random
 import pickle
+import time
 from botbrain import BotBrain
 from types import FunctionType
 from importlib import reload
@@ -13,9 +14,12 @@ CHAN = "#thehoppening"
 NICK = "BeerRobot"
 HOST = "chat.freenode.net"
 PORT = 6697
+LULL = 30
+
 
 STATE = {
 'counters':  {"__startup":True},
+'timestamp': {},
 'buffer': collections.deque(maxlen = 1000),
 'boredom': 0,
 'boredom_limit': 700,
@@ -137,13 +141,16 @@ class GrossmaulBot(pydle.Client):
 
         # make sure the username is initialized for counter use
         if(sender not in STATE['counters'].keys()): 
-            if(CHAN.lower() not in sender.lower()):
+            if(sender.lower() not in CHAN.lower()):
                 logging.info("Adding %s key to STATE['counters']" % sender)
                 STATE['counters'][sender] = {}
                 if(sender in STATE['_counters'].keys()):
                     # restore old counters
                     STATE['counters'][sender] = STATE['_counters'][sender]
                     del STATE['_counters'][sender]
+        # Save timestamp of most recent message
+        logging.info("Updating timestamp for %s" % sender)
+        STATE['timestamp'][sender] = time.time()
 
         # Filter out private messages, those will be handled in on_private_message
         if(channel == NICK): return
@@ -235,7 +242,30 @@ class GrossmaulBot(pydle.Client):
         message = message.replace("$nick", sender)        
         # replace any instances of $user with a random username from STATE 
         if (len(list(STATE['counters'].keys())) > 0):
-            message = message.replace("$user", random.choice(list(STATE['counters'].keys())))
+            # First, attempt to pick users who have talked recently for $recentuser
+            user = random.choice(list(STATE['timestamp'].keys()))
+            success = False
+            for i in range(100):
+                while user.lower() == CHAN.lower():
+                    logging.info("user is chan, rechecking")
+                    user = random.choice(list(STATE['timestamp'].keys()))
+                logging.info("Checking timestamp for %s" % user)
+                if time.time() - LULL < STATE['timestamp'][user]:
+                    logging.info("Replacing $recentuser with %s" % user)
+                    message = message.replace("$recentuser", user)
+                    break 
+                else:
+                    user = random.choice(list(STATE['timestamp'].keys()))
+                    logging.info("Timestamp of %s too old" % STATE['timestamp'][user])
+
+            # Last case, default to $user
+            message = message.replace("$recentuser", "$user")
+
+            # Don't address messages to the channel
+            user = random.choice(list(STATE['counters'].keys()))
+            while user.lower() == CHAN.lower():
+                user = random.choice(list(STATE['counters'].keys()))
+            message = message.replace("$user", user)
         return message
 
     def on_private_message(self, sender, message):
