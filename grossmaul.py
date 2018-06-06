@@ -14,7 +14,7 @@ CHAN = "#thehoppening"
 NICK = "BeerRobot"
 HOST = "chat.freenode.net"
 PORT = 6697
-LULL = 30
+LULL = 900 
 
 
 STATE = {
