@@ -2,6 +2,7 @@ from memory import Memory
 from importlib import reload
 import logging
 import time
+import parsedatetime
 
 class BotBrain:
 
@@ -28,23 +29,17 @@ class BotBrain:
         if(len(message) == 2):
             reminder = message[0].rstrip().lstrip()
             timestamp = message[1].lower().rstrip().lstrip()
-            if(' ' in timestamp):
-                (d, t) = timestamp.split()
+            # Attempt to parse timestamp text
+            cal = parsedatetime.Calendar()
+            when, ret = cal.parse(timestamp)
+            # 0 means we can't parse
+            if ret > 0:
+                isotimestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', when)
+                self.memory.addReminder("[ " + sender + "] " + reminder, isotimestamp)
+                return "Ok %s, reminder set for %s" % (sender, isotimestamp)
             else:
-                d = time.strftime("%Y-%m-%d")
-                t = timestamp
-            
-            if('pm' in t):
-                # remove the pm
-                t = t.split("pm")[0] 
-                # add to hours
-                t = t.split(":")
-                t[0] = str(int(t[0]) + 12)
-                t = ":".join(t)
-            timestamp = d + " " + t
-
-            self.memory.addReminder("[ " + sender + "] " + reminder, timestamp)
-            return "Ok %s, reminder set for %s" % (sender, timestamp)
+                return "I can't make a reminder for %s" % (timestamp)
+                
 
 
     def opDefineKeyword(self, message, sender, STATE):
