@@ -22,27 +22,33 @@ class BotBrain:
     def keepConnection(self):
         self.memory.keepConnection()
 
-    def opReminder(self, message, sender, STATE):
+    def opReminder(self, message, sender, STATE, private=False):
         """ Set a reminder in the form of {message} @@ {timestamp} """
         logging.info("opReminder-  Message: %s Sender: %s" % (message, sender))
         message = message.split("@@")
         if(len(message) == 2):
             reminder = message[0].rstrip().lstrip()
             timestamp = message[1].lower().rstrip().lstrip()
+            # allow private reminders
+            target = None
+            if private:
+                logging.info("Private reminder to %s" % (sender))
+                target = sender
+                
             # Attempt to parse timestamp text
             cal = parsedatetime.Calendar()
             when, ret = cal.parse(timestamp)
             # 0 means we can't parse
             if ret > 0:
                 isotimestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', when)
-                self.memory.addReminder("[ " + sender + "] " + reminder, isotimestamp)
+                self.memory.addReminder("[ " + sender + "] " + reminder, isotimestamp, target)
                 return "Ok %s, reminder set for %s" % (sender, isotimestamp)
             else:
                 return "I can't make a reminder for %s" % (timestamp)
                 
 
 
-    def opDefineKeyword(self, message, sender, STATE):
+    def opDefineKeyword(self, message, sender, STATE, private=False):
         logging.info("opDefineKeyword-  Message: %s Sender: %s" % (message, sender))
         message = message.split("<<")
         if(len(message) >= 2):
@@ -51,7 +57,7 @@ class BotBrain:
             self.memory.addKeyword(sender, keyword, replacement)
             return "Ok %s, remembering %s is a %s" % (sender, replacement, keyword)
 
-    def opDefine(self, message, sender, STATE):
+    def opDefine(self, message, sender, STATE, private=False):
         logging.info("opDefine-  Message: %s Sender: %s" % (message, sender))
         message = message.split(":=")
         if(len(message) >= 2):
@@ -75,7 +81,7 @@ class BotBrain:
             # If nothing else, return the sender's state
             return "%s" % STATE['counters'][sender]
 
-    def opIncrement(self, message, sender, STATE):
+    def opIncrement(self, message, sender, STATE, private=False):
         logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
         if ("++" in message):
             delim = "++"
@@ -106,7 +112,7 @@ class BotBrain:
 
         return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
         
-    def opDecrement(self, message, sender, STATE):
+    def opDecrement(self, message, sender, STATE, private=False):
         logging.info("opDecrement-  Message: %s Sender: %s" % (message, sender))
         if ("--" in message):
             delim = "--"

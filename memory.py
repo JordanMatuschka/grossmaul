@@ -24,6 +24,8 @@ class Message(Model):
     # When should it be displayed
     triggerTime = DateTimeField(default=datetime.datetime.now)
     timesSeen = IntegerField(default = 0)
+	# Who to send the message to. If null, send to channel
+    target = CharField(null = True)
     class Meta:
         global db
         database = db
@@ -112,9 +114,9 @@ class Memory:
         k = Keyword(author=author, keyword=keyword, replacement=replacement)
         k.save()    
 
-    def addReminder(self, message, timestamp):
+    def addReminder(self, message, timestamp, sender=None):
         logging.info("Memory - addReminder")
-        r = Message(message=message, triggerTime=timestamp, timesSeen=0)
+        r = Message(message=message, triggerTime=timestamp, timesSeen=0, target=sender)
         r.save()    
 
     def getKeyword(self, keyword):
@@ -139,7 +141,7 @@ class Memory:
             m.timesSeen = m.timesSeen + 1
             m.save()
             # Return only the message
-            messages.append(m.message)
+            messages.append((m.message, m.target))
              
         return messages
 
@@ -178,7 +180,6 @@ class Memory:
     def findFactoid(self, searchphrase):
         logging.info("Memory - findFactoid")
         for f in Factoid.select().where(Factoid.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
-            # Update statistics 
             return "({}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timesSeen, f.trigger, f.quote)
         return "I don't have any quotes for %s." % searchphrase
 

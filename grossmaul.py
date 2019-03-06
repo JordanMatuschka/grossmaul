@@ -135,7 +135,7 @@ class GrossmaulBot(pydle.Client):
             logging.info("Removing user counters for %s " % user)
             del STATE['counters'][user]
 
-    def on_message(self, channel, sender, message):
+    def on_message(self, channel, sender, message, private=False):
         """Callback called when the client received a message."""
         global STATE 
 
@@ -193,7 +193,7 @@ class GrossmaulBot(pydle.Client):
             if (is_op):
                 logging.info("Operator: %s" % found_op)
                 # call the appropriate function in the function dictionary
-                retval = self.botbrain.OPERATORS[found_op](message, sender, STATE)
+                retval = self.botbrain.OPERATORS[found_op](message, sender, STATE, private)
                 if (retval is not None):
                     # Send message without processing on operators
                     self.sendMessage(channel, retval, False)
@@ -271,7 +271,7 @@ class GrossmaulBot(pydle.Client):
     def on_private_message(self, sender, message):
         logging.info("Private message received: sender: %s, message: %s" % (sender, message))
         # try to just process everything like a normal message
-        self.on_message(sender, sender, NICK + ': ' + message)
+        self.on_message(sender, sender, NICK + ': ' + message, True)
 
     def save_counters(self):
         """Persist counters to file"""
@@ -297,8 +297,11 @@ class GrossmaulBot(pydle.Client):
                 self.botbrain.keepConnection()
                 
             # check for new messages
-            for message in self.botbrain.getMessages():
-                self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+            for message, target in self.botbrain.getMessages():
+                if target is None:
+                    self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+                else:
+                    self.sendMessage(target, self.preprocess_message(NICK, message))
             
             # save current counters to file
             self.save_counters()
