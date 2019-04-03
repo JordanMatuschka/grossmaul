@@ -9,7 +9,8 @@ class BotBrain:
     def __init__(self):
         self.memory = Memory()
         self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement, "+=" : self.opIncrement,
-                          "--" : self.opDecrement, "-=" : self.opDecrement, "@@" : self.opReminder }
+                          "--" : self.opDecrement, "-=" : self.opDecrement, "@all@" : self.opPublicReminder,
+                          "@@" : self.opReminder  }
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
@@ -22,10 +23,19 @@ class BotBrain:
     def keepConnection(self):
         self.memory.keepConnection()
 
+    def opPublicReminder(self, message, sender, STATE, private=False):
+        logging.info("opPublicReminder-  Message: %s Sender: %s" % (message, sender))
+        # No matter what is passed in, this is now a public reminder
+        # (private = False)
+        return self.opReminder(message, sender, STATE, False)
+
     def opReminder(self, message, sender, STATE, private=False):
         """ Set a reminder in the form of {message} @@ {timestamp} """
         logging.info("opReminder-  Message: %s Sender: %s" % (message, sender))
-        message = message.split("@@")
+        if ("@all@" in message):
+            message = message.split("@all@")
+        else:
+            message = message.split("@@")
         if(len(message) == 2):
             reminder = message[0].rstrip().lstrip()
             timestamp = message[1].lower().rstrip().lstrip()
