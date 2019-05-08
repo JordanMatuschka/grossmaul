@@ -9,8 +9,8 @@ from types import FunctionType
 from importlib import reload
 
 # Modify these for your own nefarious purposes
-CHAN = "#thehoppening"
-#CHAN = "#thetestening"
+#CHAN = "#thehoppening"
+CHAN = "#thetestening"
 NICK = "BeerRobot"
 HOST = "chat.freenode.net"
 PORT = 6697
@@ -134,6 +134,10 @@ class GrossmaulBot(pydle.Client):
         if(user in STATE['counters'].keys()):
             logging.info("Removing user counters for %s " % user)
             del STATE['counters'][user]
+
+    def on_ctcp_action(self, target, query, contents=None):
+        logging.info("ctcp action target=%s query=%s contents=%s" % (target, query, contents))
+        STATE['buffer'].appendleft( (target, '/me ' + contents) )
 
     def on_message(self, channel, sender, message, private=False):
         """Callback called when the client received a message."""
@@ -287,6 +291,7 @@ class GrossmaulBot(pydle.Client):
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
         global STATE 
+        logging.info("on_raw - %s!" % message)
 
         # Look for pings. All idle processing stuff goes here.
         if("PING" in "%s" % message): 

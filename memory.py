@@ -24,7 +24,7 @@ class Message(Model):
     # When should it be displayed
     triggerTime = DateTimeField(default=datetime.datetime.now)
     timesSeen = IntegerField(default = 0)
-	# Who to send the message to. If null, send to channel
+    # Who to send the message to. If null, send to channel
     target = CharField(null = True)
     class Meta:
         global db
@@ -196,7 +196,23 @@ class Memory:
             q.lastSeen = datetime.datetime.now()
             q.save()
             # Return the formatted quote
-            return "<%s> %s" % (q.trigger, q.quote)
+            ret = []
+            ret_string = "<%s> %s" % (q.trigger, q.quote)
+            if '\n' not in ret_string:
+                if '> /me' in ret_string:
+                    ret_string = ret_string.replace('> /me', '', 1)
+                    ret_string = ret_string.replace('<', '* ', 1)
+                return ret_string
+			# otherwise check each line for strings indicating /me
+            for line in ret_string.split('\n'):
+                if '> /me' in line:
+                    line = line.replace('> /me', '', 1)
+                    line = line.replace('<', '* ', 1)
+                logging.info("Line - " + line)
+                ret.append(line)
+            return '\\n'.join(ret)
+                    
+                
         return "I don't have any quotes for %s." % trigger
 
     def findQuote(self, searchphrase):
