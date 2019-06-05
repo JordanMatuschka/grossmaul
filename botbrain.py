@@ -163,13 +163,13 @@ class BotBrain:
         logging.info("comDeleteKeyword-  Message: %s Sender: %s" % (message, sender))
         # strip out command
         message = message[len('deletekeyword')+1:].lstrip()
-        return self.memory.deleteKeyword(sender, message)
+        return self.memory.deleteKeyword(sender, message, STATE['allow_delete'])
 
     def comDeleteFactoid(self, message, sender, STATE):
         logging.info("comDeleteFactoid-  Message: %s Sender: %s" % (message, sender))
         # strip out command
         message = message[len('delete')+1:].lstrip()
-        return self.memory.deleteFactoid(sender, message)
+        return self.memory.deleteFactoid(sender, message, STATE['allow_delete'])
 
 
     def comRemember(self, message, sender, STATE):

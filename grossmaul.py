@@ -18,11 +18,12 @@ LULL = 900
 
 
 STATE = {
-'counters':  {"__startup":True},
-'timestamp': {},
-'buffer': collections.deque(maxlen = 1000),
+'allow_delete': ['|MashTun|', 'mashtun'],
 'boredom': 0,
 'boredom_limit': 700,
+'buffer': collections.deque(maxlen = 1000),
+'counters':  {"__startup":True},
+'timestamp': {},
 }
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')

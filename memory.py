@@ -82,23 +82,23 @@ class Memory:
         self.db.close()
         self.db.connect()
 
-    def deleteFactoid(self, username, id):
+    def deleteFactoid(self, username, id, allow_delete=[]):
         logging.info("Memory - deleteFactoid")
         f = Factoid.get(Factoid.id == id)
         if (f is not None):
             ret =  "({}, {}) {} - {}".format(f.author, f.id, f.trigger, f.quote)
-            if (f.author == username):
+            if (f.author == username or f.author in allow_delete):
                 f.delete_instance()
                 return "Deleted: " + ret
             return "Unable to delete factoid: " + ret
         return "Unknown id."
 
-    def deleteKeyword(self, username, id):
+    def deleteKeyword(self, username, id, allow_delete=[]):
         logging.info("Memory - deleteKeyword")
         k = Keyword.get(Keyword.id == id)
         if (k is not None):
             ret =  "({}, {}) {} - {}".format(k.author, k.id, k.keyword, k.replacement)
-            if (k.author == username):
+            if (k.author == username or f.author in allow_delete):
                 k.delete_instance()
                 return "Deleted: " + ret
             return "Unable to delete keyword: " + ret
