@@ -13,6 +13,9 @@ class Keyword(Model):
     keyword = CharField()
     # replacement text
     replacement = CharField()
+    # ------------ Defaults below
+    # When was this added?
+    timeAdded = DateTimeField(default=datetime.datetime.now)
     class Meta:
         global db
         database = db
@@ -174,13 +177,13 @@ class Memory:
     def findKeyword(self, searchphrase):
         logging.info("Memory - findKeyword")
         for k in Keyword.select().where(Keyword.replacement.contains(searchphrase)).order_by(fn.Rand()).limit(1):
-            return "({}, {}) {} - {}".format(k.author, k.id, k.keyword, k.replacement)
+            return "({}, {}, {}) {} - {}".format(k.author, k.id, k.timeAdded, k.keyword, k.replacement)
         return "I don't have any keywords like %s." % searchphrase
 
     def findFactoid(self, searchphrase):
         logging.info("Memory - findFactoid")
         for f in Factoid.select().where(Factoid.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
-            return "({}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timesSeen, f.trigger, f.quote)
+            return "({}, {}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timeAdded, f.timesSeen, f.trigger, f.quote)
         return "I don't have any quotes for %s." % searchphrase
 
     def addQuote(self, author, trigger, quote):
@@ -218,7 +221,7 @@ class Memory:
     def findQuote(self, searchphrase):
         logging.info("Memory - findQuote")
         for f in Quote.select().where(Quote.quote.contains(searchphrase)).order_by(fn.Rand()).limit(1):
-            return "({}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timesSeen, f.trigger, f.quote)
+            return "({}, {}, {}, seen {} times) {} - {}".format(f.author, f.id, f.timeAdded, f.timesSeen, f.trigger, f.quote)
         return "I don't have any quotes for %s." % searchphrase
 
     def getRandomQuote(self):
