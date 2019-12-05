@@ -33,6 +33,20 @@ class Message(Model):
         global db
         database = db
 
+class UKV(Model):
+	"""Simple model that stores key-value pairs per user
+	lookups require usr / k and return value
+	usr may be overridden to be applications or plugins with prefixes for extensibility
+	value is varchar but may be interpreted as other types
+	"""
+    id = IntegerField(primary_key=True)
+    usr = CharField()
+    k = CharField()
+    value = CharField()
+    class Meta:
+        global db
+        database = db
+
 class Factoid(Model):
     id = IntegerField(primary_key=True)
     # Who submitted the factoid
@@ -131,6 +145,31 @@ class Memory:
     def countKeyword(self, keyword):
         logging.info("Memory - countKeyword")
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
+
+	def getCountersByUser(self, usr):
+		logging.info("Memory - getCountersByUser")
+        counters = UKV.select().where(
+                (UKV.usr == usr)
+            ):
+		return counters
+
+	def getCounter(self, usr, k):
+		logging.info("Memory - getCounter")
+        counter = UKV.select().where(
+                (UKV.usr == usr) & 
+                (UKV.k == k)
+            ):
+		return counter
+
+	def decCounter(self, usr, k, i=1):
+		logging.info("Memory - decCounter")
+		counter = self.getCounter(usr, k)
+		if not counter:
+			return "Can't find counter"
+
+		
+
+		
 
     def getMessages(self):
         logging.info("Memory - getMessages")
