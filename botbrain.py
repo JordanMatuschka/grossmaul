@@ -120,6 +120,7 @@ class BotBrain:
         else:
             STATE['counters'][sender][message] = inc
 
+        self.memory.setCounter(sender, message, STATE['counters'][sender][message])
         return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
         
     def opDecrement(self, message, sender, STATE, private=False):
@@ -154,8 +155,10 @@ class BotBrain:
             return "I can't find that counter."
 
         if(message in STATE['counters'][sender].keys()):
+            self.memory.setCounter(sender, message, STATE['counters'][sender][message])
             return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
         else:
+            self.memory.deleteCounter(sender, message)
             return "Counter removed."
         
 
@@ -282,3 +285,6 @@ class BotBrain:
 
     def getMessages(self):
         return self.memory.getMessages()    
+
+    def getCountersByUser(self, user):
+        return self.memory.getCountersByUser(user)

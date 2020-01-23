@@ -33,12 +33,12 @@ class Message(Model):
         global db
         database = db
 
-class UKV(Model):
-	"""Simple model that stores key-value pairs per user
-	lookups require usr / k and return value
-	usr may be overridden to be applications or plugins with prefixes for extensibility
-	value is varchar but may be interpreted as other types
-	"""
+class KV(Model):
+    """Simple model that stores key-value pairs per user
+    lookups require usr / k and return value
+    usr may be overridden to be applications or plugins with prefixes for extensibility
+    value is varchar but may be interpreted as other types
+    """
     id = IntegerField(primary_key=True)
     usr = CharField()
     k = CharField()
@@ -146,31 +146,41 @@ class Memory:
         logging.info("Memory - countKeyword")
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
 
-	def getCountersByUser(self, usr):
-		logging.info("Memory - getCountersByUser")
-        counters = UKV.select().where(
-                (UKV.usr == usr)
+    def getCountersByUser(self, usr):
+        logging.info("Memory - getCountersByUser")
+        ret = {}
+        for counter in  KV.select().where(KV.usr == usr):
+            logging.info("Loading %s - %s" % (str(counter.k), str(counter.value)))
+            ret[str(counter.k)] = str(counter.value)
+        return ret 
+
+    def getCounter(self, usr, k):
+        logging.info("Memory - getCounter")
+        for counter in KV.select().where(
+                (KV.usr == usr) & 
+                (KV.k == k)
             ):
-		return counters
+            logging.info("Counter id = %i" % counter.id)
+            return counter
+        return None
 
-	def getCounter(self, usr, k):
-		logging.info("Memory - getCounter")
-        counter = UKV.select().where(
-                (UKV.usr == usr) & 
-                (UKV.k == k)
-            ):
-		return counter
+    def setCounter(self, usr, k, value):
+        logging.info("Memory - setCounter")
+        counter = self.getCounter(usr, k)
+        if not counter:
+            # counter does not exist, simply create the object
+            counter = KV(usr = usr, k = k, value = value)
+        else:
+            counter.value = value
 
-	def decCounter(self, usr, k, i=1):
-		logging.info("Memory - decCounter")
-		counter = self.getCounter(usr, k)
-		if not counter:
-			return "Can't find counter"
-
-		
-
-		
-
+        counter.save()
+        
+    def deleteCounter(self, usr, k):
+        logging.info("Memory - deleteCounter")
+        c = self.getCounter(usr, k)
+        if (c is not None):
+            c.delete_instance()
+        
     def getMessages(self):
         logging.info("Memory - getMessages")
 
@@ -245,7 +255,7 @@ class Memory:
                     ret_string = ret_string.replace('> /me', '', 1)
                     ret_string = ret_string.replace('<', '* ', 1)
                 return ret_string
-			# otherwise check each line for strings indicating /me
+            # otherwise check each line for strings indicating /me
             for line in ret_string.split('\n'):
                 if '> /me' in line:
                     line = line.replace('> /me', '', 1)

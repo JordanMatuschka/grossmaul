@@ -106,8 +106,6 @@ class GrossmaulBot(pydle.Client):
             if (NICK != user):
                 NICK = user
                 logging.info("Changing internal NICK to %s" % NICK)
-        # load saved counters to await users
-        self.load_counters()
 
     def on_ctcp(self, by, target, what, contents):
         """Callback when client receives ctcp data"""
@@ -148,11 +146,8 @@ class GrossmaulBot(pydle.Client):
         if(sender not in STATE['counters'].keys()): 
             if(sender.lower() not in CHAN.lower()):
                 logging.info("Adding %s key to STATE['counters']" % sender)
-                STATE['counters'][sender] = {}
-                if(sender in STATE['_counters'].keys()):
-                    # restore old counters
-                    STATE['counters'][sender] = STATE['_counters'][sender]
-                    del STATE['_counters'][sender]
+                STATE['counters'][sender] = self.botbrain.getCountersByUser(sender)
+
         # Save timestamp of most recent message
         logging.info("Updating timestamp for %s" % sender)
         STATE['timestamp'][sender] = time.time()
@@ -175,8 +170,7 @@ class GrossmaulBot(pydle.Client):
             for op in self.botbrain.OPERATORS.keys():
                 if(op in word):
                     logging.info("Found %s in %s" % (op, word))
-                    if(word not in STATE['counters'].keys() and word not in STATE['_counters'].keys()):
-                        logging.info("Not found in %s" % (STATE['_counters'].keys()))
+                    if(word not in STATE['counters'].keys() ):
                         is_op = True
                         found_op = op
                     else:
@@ -278,16 +272,6 @@ class GrossmaulBot(pydle.Client):
         # try to just process everything like a normal message
         self.on_message(sender, sender, NICK + ': ' + message, True)
 
-    def save_counters(self):
-        """Persist counters to file"""
-        global STATE 
-        if (len(list(STATE['counters'].keys())) > 0):
-            pickle.dump(STATE['counters'], open('counters.p', 'wb'))
-
-    def load_counters(self):
-        """Load saved counters to a hidden state variable"""
-        global STATE 
-        STATE['_counters'] = pickle.load(open('counters.p', 'rb'))
 
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
@@ -308,9 +292,6 @@ class GrossmaulBot(pydle.Client):
                     self.sendMessage(CHAN, self.preprocess_message(NICK, message))
                 else:
                     self.sendMessage(target, self.preprocess_message(NICK, message))
-            
-            # save current counters to file
-            self.save_counters()
 
             # pings are a sign we're getting bored
             STATE['boredom'] += 1
