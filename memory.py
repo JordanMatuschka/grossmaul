@@ -151,7 +151,7 @@ class Memory:
         ret = {}
         for counter in  KV.select().where(KV.usr == usr):
             logging.info("Loading %s - %s" % (str(counter.k), str(counter.value)))
-            ret[str(counter.k)] = str(counter.value)
+            ret[str(counter.k)] = int(counter.value)
         return ret 
 
     def getCounter(self, usr, k):
