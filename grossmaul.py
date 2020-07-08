@@ -234,6 +234,9 @@ class GrossmaulBot(pydle.Client):
                 if(factoid is not None):
                     self.sendMessage(channel, self.preprocess_message(sender, factoid))
 
+        # To speed processing of incoming SMS, queued messages, etc, let's check for them now
+        self.get_messages()
+
     def preprocess_message(self, sender, message):
         """ Allow use of $nick and $user keywords in factoids etc """
         global STATE
@@ -272,6 +275,13 @@ class GrossmaulBot(pydle.Client):
         # try to just process everything like a normal message
         self.on_message(sender, sender, NICK + ': ' + message, True)
 
+    def get_messages(self):
+        # check for new messages
+        for message, target in self.botbrain.getMessages():
+            if target is None:
+                self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+            else:
+                self.sendMessage(target, self.preprocess_message(NICK, message))
 
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
@@ -286,12 +296,6 @@ class GrossmaulBot(pydle.Client):
             if self.botbrain is not None: 
                 self.botbrain.keepConnection()
                 
-            # check for new messages
-            for message, target in self.botbrain.getMessages():
-                if target is None:
-                    self.sendMessage(CHAN, self.preprocess_message(NICK, message))
-                else:
-                    self.sendMessage(target, self.preprocess_message(NICK, message))
 
             # pings are a sign we're getting bored
             STATE['boredom'] += 1
@@ -300,6 +304,8 @@ class GrossmaulBot(pydle.Client):
                 STATE['boredom_limit'] += 500
                 boredthings = ['...', '...', '!fun fact', '!recall', '!youtube me', 'office quotes']
                 self.on_message(CHAN, CHAN, random.choice(boredthings))
+            else: 
+                self.get_messages()
 
         # Let the base client handle the raw stuff
         super(GrossmaulBot, self).on_raw(message)
