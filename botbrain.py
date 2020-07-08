@@ -114,6 +114,8 @@ class BotBrain:
             sender = message.split(".")[0]
             message = message.split(".")[1]
 
+        logging.info("inc - %s" % (repr(inc)))
+        logging.info("message - %s" % (repr(message)))
 
         if(message in STATE['counters'][sender].keys()):
             STATE['counters'][sender][message] += inc 
@@ -145,6 +147,9 @@ class BotBrain:
         if ("." in message):
             sender = message.split(".")[0]
             message = message.split(".")[1]
+
+        logging.info("dec - %s" % (repr(dec)))
+        logging.info("message - %s" % (repr(message)))
 
         if(message in STATE['counters'][sender].keys()):
             STATE['counters'][sender][message] -= dec 
