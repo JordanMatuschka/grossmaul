@@ -277,11 +277,20 @@ class GrossmaulBot(pydle.Client):
 
     def get_messages(self):
         # check for new messages
-        for message, target in self.botbrain.getMessages():
-            if target is None:
-                self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+        for message, target, sender, evaluate in self.botbrain.getMessages():
+            if evaluate:
+                # Pretend this is just a normal message send from the channel
+                    self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
+                    self.on_message(CHAN, sender, message)
             else:
-                self.sendMessage(target, self.preprocess_message(NICK, message))
+                # Add username to message if sender is sent
+                if sender:
+                    message = '[ ' + sender + '] ' + message
+
+                if target is None:
+                    self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+                else:
+                    self.sendMessage(target, self.preprocess_message(NICK, message))
 
     def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""

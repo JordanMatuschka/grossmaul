@@ -24,6 +24,10 @@ class Message(Model):
     id = IntegerField(primary_key=True)
     # Message to be sent to channel
     message = CharField()
+    # Did a user of the channel send this?
+    sender = CharField()
+    # Should we evaluate this like a normal message?
+    evaluate = BooleanField()
     # When should it be displayed
     triggerTime = DateTimeField(default=datetime.datetime.now)
     timesSeen = IntegerField(default = 0)
@@ -193,7 +197,7 @@ class Memory:
             m.timesSeen = m.timesSeen + 1
             m.save()
             # Return only the message
-            messages.append((m.message, m.target))
+            messages.append((m.message, m.target, m.sender, m.evaluate))
              
         return messages
 
