@@ -1,4 +1,5 @@
 import pydle
+import asyncio
 import logging
 import collections
 import random
@@ -12,7 +13,7 @@ from importlib import reload
 CHAN = "#thehoppening"
 #CHAN = "#thetestening"
 NICK = "BeerRobot"
-HOST = "chat.freenode.net"
+HOST = "irc.freenode.net"
 PORT = 6697
 LULL = 900 
 
@@ -33,7 +34,7 @@ class GrossmaulBot(pydle.Client):
     """  """
     botbrain = None
 
-    def sendMessage(self, target, message, processing = True):
+    async def sendMessage(self, target, message, processing = True):
         global STATE
         """Customize message sending to allow for keyword parsing"""
         # if we're sending a message we're obviously no longer bored
@@ -68,35 +69,38 @@ class GrossmaulBot(pydle.Client):
         
         # If the message starts with /me it is an action, treat accordingly        
         if message.lower().startswith("/me"):
-            self.action(target, message[3:].lstrip())
+            await self.action(target, message[3:].lstrip())
         else:
             # Look for a \n that indicates a newline
             if '\\n' in message:
                 lines = message.split('\\n')
                 for line in lines:
-                    self.sendMessage(target, line, False)
+                    await self.sendMessage(target, line, False)
                 return
             else:
                 #otherwise simply log and send the message
                 STATE['buffer'].appendleft( (NICK, message) )
                 logging.info("Sending message to %s: %s" % (target, message))
-                self.message(target, message)
+                await self.message(target, message)
 
-    def action(self, target, message):
+    async def action(self, target, message):
         # send a CTCP message that will be interpreted as an action
-        self.ctcp(target, "ACTION", message)
+        await self.ctcp(target, "ACTION", message)
 
 
-    def on_connect(self):
+    async def on_connect(self):
         """Callback when client has successfully connected. Client will attempt to connect to db and join CHAN."""
+        await super().on_connect()
         logging.info("Connected to %s" % HOST)    
         self.botbrain = BotBrain()
-        self.join(CHAN)
+        await self.join(CHAN)
 
-    def on_join(self, channel, user):
+    async def on_join(self, channel, user):
         """Called when any user (including this client) joins the channel."""
         global STATE
         global NICK
+
+        await super().on_join(channel, user)
         logging.info("%s has joined %s" % (user, channel))
         # Detect if the client is using a backup name and if so change NICK
         # If "__startup" is still in STATE['counters'], we will use user as the new NICK
@@ -107,16 +111,16 @@ class GrossmaulBot(pydle.Client):
                 NICK = user
                 logging.info("Changing internal NICK to %s" % NICK)
 
-    def on_ctcp(self, by, target, what, contents):
+    async def on_ctcp(self, by, target, what, contents):
         """Callback when client receives ctcp data"""
         logging.info("CTCP: by: %s - target: %s - what: %s - contents: %s" % (by, target, what, contents))
         
 
-    def on_unknown(self, message):
+    async def on_unknown(self, message):
         """Callback when client receives unknown data"""
         logging.warning("Client received unknown data: %s" % message)
 
-    def on_nick_change(self, old, new):
+    async def on_nick_change(self, old, new):
         """Callback when a user changes nicknames: keep counter keys up to date"""
         global STATE
         global NICK
@@ -128,17 +132,17 @@ class GrossmaulBot(pydle.Client):
             else:
                 STATE['counters'][new] = {}
 
-    def on_part(self, channel, user, message=None):
+    async def on_part(self, channel, user, message=None):
         """"Remove counters on part, thus removing user from random $user choice"""
         if(user in STATE['counters'].keys()):
             logging.info("Removing user counters for %s " % user)
             del STATE['counters'][user]
 
-    def on_ctcp_action(self, target, query, contents=None):
+    async def on_ctcp_action(self, target, query, contents=None):
         logging.info("ctcp action target=%s query=%s contents=%s" % (target, query, contents))
         STATE['buffer'].appendleft( (target, '/me ' + contents) )
 
-    def on_message(self, channel, sender, message, private=False):
+    async def on_message(self, channel, sender, message, private=False):
         """Callback called when the client received a message."""
         global STATE 
 
@@ -163,10 +167,8 @@ class GrossmaulBot(pydle.Client):
         # For now, make sure that the message is addressed to this bot or is an operator
         is_op = False
         found_op = False
-        logging.info("Testing for operators:")
 
         for word in message.split(' '):
-            logging.info("testing for operators in %s" % word)
             for op in self.botbrain.OPERATORS.keys():
                 if(op in word):
                     logging.info("Found %s in %s" % (op, word))
@@ -195,7 +197,7 @@ class GrossmaulBot(pydle.Client):
                 retval = self.botbrain.OPERATORS[found_op](message, sender, STATE, private)
                 if (retval is not None):
                     # Send message without processing on operators
-                    self.sendMessage(channel, retval, False)
+                    await self.sendMessage(channel, retval, False)
 
             # If it's not an operator, look for a command
             if(not is_op):
@@ -209,7 +211,7 @@ class GrossmaulBot(pydle.Client):
                     retval = self.botbrain.COMMANDS[command](message, sender, STATE)
                     if (retval is not None):
                         # Send message with appriate processing
-                        self.sendMessage(channel, self.preprocess_message(sender, retval), self.botbrain.PROCESSCOMMANDS[command])
+                        await self.sendMessage(channel, self.preprocess_message(sender, retval), self.botbrain.PROCESSCOMMANDS[command])
                 else:
                     logging.info("Can't find %s()" % command)
 
@@ -218,12 +220,12 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(channel, self.preprocess_message(sender, factoid))
+                    await self.sendMessage(channel, self.preprocess_message(sender, factoid))
                 else:
                     # If it's not an operator, command, or factoid, look for a __confused response
                     factoid = self.botbrain.findFactoid("__confused")
                     if(factoid is not None):
-                        self.sendMessage(channel, self.preprocess_message(sender, factoid))
+                        await self.sendMessage(channel, self.preprocess_message(sender, factoid))
 
 
         # If the message is not addressed to the bot, let's look for a factoid
@@ -232,10 +234,10 @@ class GrossmaulBot(pydle.Client):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
-                    self.sendMessage(channel, self.preprocess_message(sender, factoid))
+                    await self.sendMessage(channel, self.preprocess_message(sender, factoid))
 
         # To speed processing of incoming SMS, queued messages, etc, let's check for them now
-        self.get_messages()
+        await self.get_messages()
 
     def preprocess_message(self, sender, message):
         """ Allow use of $nick and $user keywords in factoids etc """
@@ -270,29 +272,29 @@ class GrossmaulBot(pydle.Client):
             message = message.replace("$user", user)
         return message
 
-    def on_private_message(self, sender, message):
+    async def on_private_message(self, target, sender, message):
         logging.info("Private message received: sender: %s, message: %s" % (sender, message))
         # try to just process everything like a normal message
-        self.on_message(sender, sender, NICK + ': ' + message, True)
+        await self.on_message(sender, sender, NICK + ': ' + message, True)
 
-    def get_messages(self):
+    async def get_messages(self):
         # check for new messages
         for message, target, sender, evaluate in self.botbrain.getMessages():
             if evaluate:
                 # Pretend this is just a normal message send from the channel
-                    self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
-                    self.on_message(CHAN, sender, message)
+                    await self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
+                    await self.on_message(CHAN, sender, message)
             else:
                 # Add username to message if sender is sent
                 if sender:
                     message = '[ ' + sender + '] ' + message
 
                 if target is None:
-                    self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+                    await self.sendMessage(CHAN, self.preprocess_message(NICK, message))
                 else:
-                    self.sendMessage(target, self.preprocess_message(NICK, message))
+                    await self.sendMessage(target, self.preprocess_message(NICK, message))
 
-    def on_raw(self, message):
+    async def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
         global STATE 
         logging.info("on_raw - %s!" % message)
@@ -314,14 +316,20 @@ class GrossmaulBot(pydle.Client):
                 boredthings = ['...', '...', '!fun fact', '!recall', '!youtube me', 'office quotes']
                 self.on_message(CHAN, CHAN, random.choice(boredthings))
             else: 
-                self.get_messages()
+                await self.get_messages()
 
         # Let the base client handle the raw stuff
-        super(GrossmaulBot, self).on_raw(message)
+        await super(GrossmaulBot, self).on_raw(message)
 
-# Start and connect the bot
-client = GrossmaulBot(NICK, fallback_nicknames=[NICK[:-1]+"1", NICK[:-1]+"2"])
-logging.info("Connecting to %s:%s" % (HOST, PORT))
-client.connect(HOST, PORT, tls=True, tls_verify=False)
-client.handle_forever()
+
+
+async def main():
+    # Start and connect the bot
+    client = GrossmaulBot(NICK, fallback_nicknames=[NICK[:-1]+"1", NICK[:-1]+"2"])
+    logging.info("Connecting to %s:%s" % (HOST, PORT))
+    await client.connect(HOST, PORT, tls=True, tls_verify=False)
+    await client.handle_forever()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
