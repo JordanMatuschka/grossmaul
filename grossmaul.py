@@ -314,7 +314,7 @@ class GrossmaulBot(pydle.Client):
                 # increment the limit so he gets less chatty over time
                 STATE['boredom_limit'] += 500
                 boredthings = ['...', '...', '!fun fact', '!recall', '!youtube me', 'office quotes']
-                self.on_message(CHAN, CHAN, random.choice(boredthings))
+                await self.on_message(CHAN, CHAN, random.choice(boredthings))
             else: 
                 await self.get_messages()
 
