@@ -198,22 +198,23 @@ class BotBrain:
             buff.popleft()
 
         primaryuser = message[0]
-        while(len(message) > 1):
-            # allow for "remember user word user word user word"
-            # extract the username we're looking for
-            targetuser = message.pop(0)
-            # and the word 
-            targettext = message.pop(0)
+        if(primaryuser in STATE['counters'].keys()):
+            while(len(message) > 1):
+                # allow for "remember user word user word user word"
+                # extract the username we're looking for
+                targetuser = message.pop(0)
+                # and the word 
+                targettext = message.pop(0)
 
-            # search the buffer for a matching line
-            for user, text in buff:
-                if(user == targetuser and targettext in text):
-                    # If there's already something there, make it multiline
-                    if (len(quote) > 0):
-                        quote += '\n' + '<' + targetuser + '> ' + text
-                    else:
-                        quote = text
-                    break # break for
+                # search the buffer for a matching line
+                for user, text in buff:
+                    if(user == targetuser and targettext in text):
+                        # If there's already something there, make it multiline
+                        if (len(quote) > 0):
+                            quote += '\n' + '<' + targetuser + '> ' + text
+                        else:
+                            quote = text
+                        break # break for
 
         if (len(quote) > 0):
             # we found something, let's save it                
