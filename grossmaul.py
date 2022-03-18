@@ -9,14 +9,8 @@ from botbrain import BotBrain
 from types import FunctionType
 from importlib import reload
 
-# Modify these for your own nefarious purposes
-CHAN = "#thehoppening"
-#CHAN = "#thetestening"
-NICK = "BeerRobot"
-HOST = "irc.freenode.net"
-PORT = 6697
-LULL = 900 
-
+# Import settings from config.py
+from config import CHAN, NICK, HOST, PORT, LULL, SASL, SASL_USER, SASL_PASS
 
 STATE = {
 'allow_delete': ['|MashTun|', 'mashtun'],
@@ -145,6 +139,9 @@ class GrossmaulBot(pydle.Client):
     async def on_message(self, channel, sender, message, private=False):
         """Callback called when the client received a message."""
         global STATE 
+
+        if(sender is None or sender == NICK):
+            return 
 
         # make sure the username is initialized for counter use
         if(sender not in STATE['counters'].keys()): 
@@ -280,19 +277,25 @@ class GrossmaulBot(pydle.Client):
     async def get_messages(self):
         # check for new messages
         for message, target, sender, evaluate in self.botbrain.getMessages():
-            if evaluate:
-                # Pretend this is just a normal message send from the channel
-                    await self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
-                    await self.on_message(CHAN, sender, message)
-            else:
-                # Add username to message if sender is sent
-                if sender:
-                    message = '[ ' + sender + '] ' + message
-
-                if target is None:
-                    await self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+            if len(message) > 0: 
+                if evaluate:
+                    # Pretend this is just a normal message send from the channel
+                        await self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
+                        await self.on_message(CHAN, sender, message)
                 else:
-                    await self.sendMessage(target, self.preprocess_message(NICK, message))
+                    # Add username to message if sender is sent
+                    if sender:
+                        message = '[ ' + sender + '] ' + message
+
+                    if target is None:
+                        await self.sendMessage(CHAN, self.preprocess_message(NICK, message))
+                    else:
+                        await self.sendMessage(target, self.preprocess_message(NICK, message))
+        # Don't get kicked for flooding
+        await asyncio.sleep(0.2)
+
+    async def on_raw_privmsg(self, message):
+        await super(GrossmaulBot, self).on_raw_privmsg(message)
 
     async def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
@@ -325,9 +328,17 @@ class GrossmaulBot(pydle.Client):
 
 async def main():
     # Start and connect the bot
-    client = GrossmaulBot(NICK, fallback_nicknames=[NICK[:-1]+"1", NICK[:-1]+"2"])
+    if SASL:
+        client = GrossmaulBot(
+                nickname = NICK,
+                fallback_nicknames = [NICK[:-1]+"1", NICK[:-1]+"2"],
+                sasl_username = SASL_USER,
+                sasl_password = SASL_PASS,
+                )
+    else:
+        client = GrossmaulBot(NICK, fallback_nicknames=[NICK[:-1]+"1", NICK[:-1]+"2"])
     logging.info("Connecting to %s:%s" % (HOST, PORT))
-    await client.connect(HOST, PORT, tls=True, tls_verify=False)
+    await client.connect(HOST, PORT, tls=True)
     await client.handle_forever()
 
 if __name__ == "__main__":

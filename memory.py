@@ -2,7 +2,7 @@ from peewee import *
 import datetime
 import logging
 
-from memoryconfig import db
+from config import db
 
 class Keyword(Model):
     """Datatype to allow simple text replacement"""

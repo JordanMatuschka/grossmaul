@@ -50,7 +50,7 @@ class BotBrain:
             when, ret = cal.parse(timestamp)
             # 0 means we can't parse
             if ret > 0:
-                isotimestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', when)
+                isotimestamp = time.strftime('%Y-%m-%dT%H:%M:%S', when)
                 self.memory.addReminder("[ " + sender + "] " + reminder, isotimestamp, target)
                 return "Ok %s, reminder set for %s" % (sender, isotimestamp)
             else:
