@@ -61,21 +61,21 @@ class GrossmaulBot(pydle.Client):
                             if (replacement is not None):
                                 message = message.replace('$' + keyword, replacement, 1)
         
+        # Look for a \n that indicates a newline
+        if '\\n' in message:
+            lines = message.split('\\n')
+            for line in lines:
+                await self.sendMessage(target, line, False)
+            return
+
         # If the message starts with /me it is an action, treat accordingly        
         if message.lower().startswith("/me"):
             await self.action(target, message[3:].lstrip())
         else:
-            # Look for a \n that indicates a newline
-            if '\\n' in message:
-                lines = message.split('\\n')
-                for line in lines:
-                    await self.sendMessage(target, line, False)
-                return
-            else:
-                #otherwise simply log and send the message
-                STATE['buffer'].appendleft( (NICK, message) )
-                logging.info("Sending message to %s: %s" % (target, message))
-                await self.message(target, message)
+            #otherwise simply log and send the message
+            STATE['buffer'].appendleft( (NICK, message) )
+            logging.info("Sending message to %s: %s" % (target, message))
+            await self.message(target, message)
 
     async def action(self, target, message):
         # send a CTCP message that will be interpreted as an action
