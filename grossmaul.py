@@ -5,10 +5,13 @@ import collections
 import random
 import pickle
 import time
+from sys import path
 from botbrain import BotBrain
 from types import FunctionType
 from importlib import reload
 
+path.append('./plugins')
+import grossmaulplugin
 # Import settings from config.py
 from config import CHAN, NICK, HOST, PORT, LULL, SASL, SASL_USER, SASL_PASS
 

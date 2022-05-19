@@ -1,8 +1,14 @@
 from memory import Memory
-from importlib import reload
 import logging
 import time
 import parsedatetime
+from importlib import import_module 
+from pathlib import Path
+from inspect import isclass
+from sys import path
+
+path.append('./plugins')
+import grossmaulplugin
 
 class BotBrain:
 
@@ -19,6 +25,30 @@ class BotBrain:
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
                     "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
                     "deletekeyword" : False, 'vardump' : False }
+
+        # Look for any installed plugins and add to command/operator dictionaries
+        self.loadPlugins()
+
+    def loadPlugins(self):
+        path = Path('./plugins')
+
+        dirs = [e for e in path.iterdir() if e.is_dir()]
+        for d in dirs:
+            # Ignore temp/private directories like __pycache__
+            if d.name[0] is not '_':
+                # import the module for testing
+                plugin = import_module('plugins.' + d.name + '.' + d.name) 
+
+                for i in vars(plugin):
+                    cls = getattr(plugin, i)
+                    if isclass(cls):
+                        instance = cls()
+                        # If instance is subclass to GrossmaulPlugin, it will have COMMANDS, OPERATORS, and PROCESSCOMMANDS, so add those
+                        # to our main dictionaries
+                        if issubclass(cls, grossmaulplugin.GrossmaulPlugin):
+                            self.COMMANDS.update(instance.COMMANDS)
+                            self.OPERATORS.update(instance.OPERATORS)
+                            self.PROCESSCOMMANDS.update(instance.PROCESSCOMMANDS)
  
     def keepConnection(self):
         self.memory.keepConnection()
