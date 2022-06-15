@@ -227,6 +227,19 @@ class Memory:
             # Return only the text of the factoid
             return f.quote
 
+    def getFactoidById(self, id):
+        logging.info("Memory - getFactoid")
+        # Honestly this isn't prettier than just writing SQL
+        f = Factoid.get(Factoid.id == id)
+        if (f is not None):
+            # Update statistics 
+            f.timesSeen = f.timesSeen + 1
+            f.lastSeen = datetime.datetime.now()
+            f.save()
+            # Return only the text of the factoid
+            return f.quote
+        return "I don't have a factoid with that id."
+
     def findKeyword(self, searchphrase):
         logging.info("Memory - findKeyword")
         for k in Keyword.select().where(Keyword.replacement.contains(searchphrase)).order_by(fn.Rand()).limit(1):
