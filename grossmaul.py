@@ -271,6 +271,9 @@ class GrossmaulBot(pydle.Client):
 
     async def on_private_message(self, target, sender, message):
         logging.info("Private message received: sender: %s, message: %s" % (sender, message))
+        # remove any accidental '!'s
+        if(message[0] == '!'):
+            message = message[1:]
         # try to just process everything like a normal message
         await self.on_message(sender, sender, NICK + ': ' + message, True)
 
