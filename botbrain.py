@@ -226,12 +226,13 @@ class BotBrain:
     def comEvaluate(self, message, sender, STATE):
         logging.info("comEvaluate-  Message: %s Sender: %s" % (message, sender))
         message = message.rstrip().lstrip()[:255]
-        if(len(message.split(" ")) == 2):
+        if(len(message.split(" ")) == 2) and (message.split(" ")[1].isnumeric()):
             # If this is a number we're evaluating by id
-            if(message.split(" ")[1].isnumeric()):
                 return self.memory.getFactoidById(int(message.split(" ")[1]))
-        elif(len(message.split(" ")) >= 2):
+
+        if(len(message.split(" ")) >= 2):
             return ' '.join(message.split(" ")[1:])
+
         # if no keyword is passed, just return the latest factoid
         return self.memory.getLatestFactoid()
 
