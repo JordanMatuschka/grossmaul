@@ -111,15 +111,16 @@ class BotBrain:
         # Look for a target parameter
         message = message.split()
         if(len(message) == 2):
-            logging.info("Looking for %s in counter keys" % message[1])
-            if (message[1] in STATE['counters'].keys()):
-                logging.info("Found %s in counter keys" % message[1])
-                return "%s" % STATE['counters'][message[1]]
+            user = message[1]
+            logging.info("Looking for %s in kv" % user)
+            counters = self.memory.getCountersByUser(user)
+            if (counters):
+                return "%s" % counters
             else:
-                return "I can't find any counters for %s" % message[1]
+                return "I can't find any counters for %s" % user
         else: 
             # If nothing else, return the sender's state
-            return "%s" % STATE['counters'][sender]
+            return "%s" % self.memory.getCountersByUser(sender)
 
     def opIncrement(self, message, sender, STATE, private=False):
         logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
@@ -147,13 +148,14 @@ class BotBrain:
         logging.info("inc - %s" % (repr(inc)))
         logging.info("message - %s" % (repr(message)))
 
-        if(message in STATE['counters'][sender].keys()):
-            STATE['counters'][sender][message] += inc 
+        counter = self.memory.getCounterValue(sender, message)
+        if(counter):
+            counter += inc 
         else:
-            STATE['counters'][sender][message] = inc
+            counter = inc
 
-        self.memory.setCounter(sender, message, STATE['counters'][sender][message])
-        return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
+        self.memory.setCounter(sender, message, int(counter))
+        return "%s has a %s count of %i" % (sender, message, counter)
         
     def opDecrement(self, message, sender, STATE, private=False):
         logging.info("opDecrement-  Message: %s Sender: %s" % (message, sender))
@@ -181,20 +183,19 @@ class BotBrain:
         logging.info("dec - %s" % (repr(dec)))
         logging.info("message - %s" % (repr(message)))
 
-        if(message in STATE['counters'][sender].keys()):
-            STATE['counters'][sender][message] -= dec 
-            if(STATE['counters'][sender][message] <= 0):
+        counter = self.memory.getCounterValue(sender, message)
+        if(counter):
+            counter -= dec 
+            if(counter <= 0):
                 # Remove from list if we go to 0
-                del STATE['counters'][sender][message]
+                self.memory.deleteCounter(sender, message)
+                return "Counter removed."
+            else:
+                self.memory.setCounter(sender, message, counter)
+                return "%s has a %s count of %i" % (sender, message, counter)
         else:
             return "I can't find that counter."
 
-        if(message in STATE['counters'][sender].keys()):
-            self.memory.setCounter(sender, message, STATE['counters'][sender][message])
-            return "%s has a %s count of %i" % (sender, message, STATE['counters'][sender][message])
-        else:
-            self.memory.deleteCounter(sender, message)
-            return "Counter removed."
         
 
     def comDeleteKeyword(self, message, sender, STATE):

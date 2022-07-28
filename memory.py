@@ -168,6 +168,16 @@ class Memory:
             return counter
         return None
 
+    def getCounterValue(self, usr, k):
+        logging.info("Memory - getCounter")
+        for counter in KV.select().where(
+                (KV.usr == usr) & 
+                (KV.k == k)
+            ):
+            logging.info("Counter id = %i" % counter.id)
+            return int(counter.value)
+        return None
+
     def setCounter(self, usr, k, value):
         logging.info("Memory - setCounter")
         counter = self.getCounter(usr, k)
