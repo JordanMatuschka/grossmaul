@@ -287,6 +287,9 @@ class GrossmaulBot(pydle.Client):
                 if evaluate:
                     # Pretend this is just a normal message send from the channel
                         await self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)
+                        # Strip out whitespace and any additional info tagging along on `sender`
+                        if len(sender.split()) > 1:
+                            sender = sender.split()[0]
                         await self.on_message(CHAN, sender, message)
                 else:
                     # Add username to message if sender is sent
