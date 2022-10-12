@@ -75,7 +75,8 @@ class GrossmaulBot(pydle.Client):
             #otherwise simply log and send the message
             STATE['buffer'].appendleft( (NICK, message) )
             logging.info("Sending message to %s: %s" % (target, message))
-            await self.message(target, message)
+            #await self.message(target, message)
+            print (message)
 
     async def action(self, target, message):
         # send a CTCP message that will be interpreted as an action
@@ -344,6 +345,17 @@ async def main():
     await client.connect(HOST, PORT, tls=True)
     await client.handle_forever()
 
+async def repl():
+    global CHAN
+    global NICK
+    client = GrossmaulBot(nickname = NICK)
+    client.botbrain = BotBrain()
+    test = "fart"
+    
+    print (await client.on_message(CHAN, "user", test))
+    
+
 if __name__ == "__main__":
     asyncio.run(main())
-
+else:
+    asyncio.run(repl())
