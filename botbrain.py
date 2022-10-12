@@ -49,6 +49,7 @@ class BotBrain:
                             self.COMMANDS.update(instance.COMMANDS)
                             self.OPERATORS.update(instance.OPERATORS)
                             self.PROCESSCOMMANDS.update(instance.PROCESSCOMMANDS)
+                            instance.setMemory(self.memory)
  
     def keepConnection(self):
         self.memory.keepConnection()

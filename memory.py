@@ -195,6 +195,15 @@ class Memory:
         if (c is not None):
             c.delete_instance()
         
+
+    def getMessageById(self, id):
+        logging.info("Memory - getMessageById")
+
+        m = Message.get(Message.id == id)
+        if (m is not None):
+            return m
+        return "Unknown id."
+
     def getMessages(self):
         logging.info("Memory - getMessages")
 
