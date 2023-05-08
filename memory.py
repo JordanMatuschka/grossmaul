@@ -3,6 +3,7 @@ import datetime
 import logging
 
 from config import db
+COUNTERAPP = "counters"
 
 class Keyword(Model):
     """Datatype to allow simple text replacement"""
@@ -47,6 +48,7 @@ class KV(Model):
     usr = CharField()
     k = CharField()
     value = CharField()
+    app = CharField()
     class Meta:
         global db
         database = db
@@ -151,28 +153,38 @@ class Memory:
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
 
     def getCountersByUser(self, usr):
+        global COUNTERAPP # fix this shit
         logging.info("Memory - getCountersByUser")
         ret = {}
-        for counter in  KV.select().where(KV.usr == usr):
+        for counter in  KV.select().where(KV.usr == usr, KV.app == COUNTERAPP):
             logging.info("Loading %s - %s" % (str(counter.k), str(counter.value)))
             ret[str(counter.k)] = int(counter.value)
         return ret 
 
-    def getCounter(self, usr, k):
-        logging.info("Memory - getCounter")
-        for counter in KV.select().where(
+    def getKVA(self, usr, k, app):
+        logging.info("Memory - getKVA")
+        for kva in KV.select().where(
                 (KV.usr == usr) & 
-                (KV.k == k)
+                (KV.k == k) &
+                (KV.app == app)
             ):
-            logging.info("Counter id = %i" % counter.id)
-            return counter
+            logging.info("KVA id = %i" % kva.id)
+            return kva
         return None
 
+    def getCounter(self, usr, k):
+        global COUNTERAPP # fix this shit
+        logging.info("Memory - getCounter")
+        return self.getKVA(usr, k, COUNTERAPP)
+# TODO do the rest of these guys like this
+
     def getCounterValue(self, usr, k):
+        global COUNTERAPP # fix this shit
         logging.info("Memory - getCounter")
         for counter in KV.select().where(
                 (KV.usr == usr) & 
-                (KV.k == k)
+                (KV.k == k) &
+                (KV.app == COUNTERAPP)
             ):
             logging.info("Counter id = %i" % counter.id)
             return int(counter.value)
@@ -183,13 +195,14 @@ class Memory:
         counter = self.getCounter(usr, k)
         if not counter:
             # counter does not exist, simply create the object
-            counter = KV(usr = usr, k = k, value = value)
+            counter = KV(usr = usr, k = k, value = value, app = COUNTERAPP)
         else:
             counter.value = value
 
         counter.save()
         
     def deleteCounter(self, usr, k):
+        global COUNTERAPP # fix this shit
         logging.info("Memory - deleteCounter")
         c = self.getCounter(usr, k)
         if (c is not None):
