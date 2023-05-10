@@ -21,10 +21,11 @@ class BotBrain:
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
                     "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword,
-                    "vardump" : self.comVardump}
+                    "vardump" : self.comVardump, "plugins" : self.comListPlugins }
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
                     "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
-                    "deletekeyword" : False, 'vardump' : False }
+                    "deletekeyword" : False, 'vardump' : False, "plugins" : False }
+        self.PLUGINS = [ ]
 
         # Look for any installed plugins and add to command/operator dictionaries
         self.loadPlugins()
@@ -49,6 +50,8 @@ class BotBrain:
                             self.COMMANDS.update(instance.COMMANDS)
                             self.OPERATORS.update(instance.OPERATORS)
                             self.PROCESSCOMMANDS.update(instance.PROCESSCOMMANDS)
+                            if type(instance).__name__ is not 'GrossmaulPlugin': 
+                                self.PLUGINS.append(type(instance).__name__)
                             instance.setMemory(self.memory)
  
     def keepConnection(self):
@@ -106,6 +109,9 @@ class BotBrain:
             factoid = message[1].rstrip().lstrip()
             self.memory.addFactoid(sender, trigger, factoid)
             return "Ok %s, remembering %s -> %s" % (sender, trigger, factoid)
+
+    def comListPlugins (self, message, sender, STATE):
+        return str(self.PLUGINS)
 
     def comVardump(self, message, sender, STATE):
         logging.info("comVardump-  Message: %s Sender: %s" % (message, sender))
