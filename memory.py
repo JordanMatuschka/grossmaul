@@ -39,7 +39,7 @@ class Message(Model):
         database = db
 
 class KV(Model):
-    """Simple model that stores key-value pairs per user
+    """Simple model that stores key-value pairs per user, per app
     lookups require usr / k and return value
     usr may be overridden to be applications or plugins with prefixes for extensibility
     value is varchar but may be interpreted as other types
@@ -156,13 +156,16 @@ class Memory:
         global COUNTERAPP # fix this shit
         logging.info("Memory - getCountersByUser")
         ret = {}
-        for counter in  KV.select().where(KV.usr == usr, KV.app == COUNTERAPP):
+        for counter in KV.select().where(KV.usr == usr, KV.app == COUNTERAPP):
             logging.info("Loading %s - %s" % (str(counter.k), str(counter.value)))
             ret[str(counter.k)] = int(counter.value)
         return ret 
 
-    def getKVA(self, usr, k, app):
-        logging.info("Memory - getKVA")
+    # All db API should follow App, Key, User order, some will be missing
+
+# Abstract this one even futrher, it should call get KVA and just return the value
+    def getValueAppKeyUser(self, app, k, usr):
+        logging.info("Memory - getValueAppKeyUser")
         for kva in KV.select().where(
                 (KV.usr == usr) & 
                 (KV.k == k) &
@@ -172,35 +175,63 @@ class Memory:
             return kva
         return None
 
-    def getCounter(self, usr, k):
-        global COUNTERAPP # fix this shit
-        logging.info("Memory - getCounter")
-        return self.getKVA(usr, k, COUNTERAPP)
-# TODO do the rest of these guys like this
+    def getValuesAppKey(self, app, k):
+        logging.info("Memory - getValuesAppKey")
+        ret = {}
+        for val in KV.select().where(KV.app == app, KV.k == k):
+            logging.info("Found %s - %s" % (str(val.k), str(val.value)))
+            # 
+            ret[str(val.usr)] = val.value
+        return ret 
 
-    def getCounterValue(self, usr, k):
-        global COUNTERAPP # fix this shit
-        logging.info("Memory - getCounter")
-        for counter in KV.select().where(
+    def getValuesAppUser(self, app, usr):
+        logging.info("Memory - getValuesAppUser")
+        ret = {}
+        for val in KV.select().where(KV.usr == usr, KV.app == app):
+            logging.info("Found %s - %s" % (str(val.k), str(val.value)))
+            # 
+            ret[str(val.k)] = val.value
+        return ret 
+
+    def getKVAppKeyUser(self, app, k, usr):
+        logging.info("Memory - getValueAppKeyUser")
+        for kva in KV.select().where(
                 (KV.usr == usr) & 
                 (KV.k == k) &
-                (KV.app == COUNTERAPP)
+                (KV.app == app)
             ):
-            logging.info("Counter id = %i" % counter.id)
-            return int(counter.value)
+            logging.info("KVA id = %i" % kva.id)
+            return kva
         return None
 
-    def setCounter(self, usr, k, value):
-        logging.info("Memory - setCounter")
-        counter = self.getCounter(usr, k)
+    def setValue(self, app, k, usr, value):
+        logging.info("Memory - setValue")
+        counter = self.getValueAppKeyUser(app, k, usr)
         if not counter:
             # counter does not exist, simply create the object
-            counter = KV(usr = usr, k = k, value = value, app = COUNTERAPP)
+            counter = KV(usr = usr, k = k, value = value, app = app)
         else:
             counter.value = value
 
         counter.save()
+
+    def delete(self, app, usr, k):
+        logging.info("Memory - delete")
+        c = self.getKVAppKeyUser(app, usr, k)
+        if (c is not None):
+            c.delete_instance()
+
+    def getCounter(self, usr, k):
+        global COUNTERAPP # fix this shit
+        logging.info("Memory - getCounter")
+        return self.getValueAppKeyUser(COUNTERAPP, k, usr)
+
+    def getCounterValue(self, usr, k):
+        logging.info("Memory - getCounterValue")
+        counter = self.getCounter(usr, k)
+        return int(counter.value)
         
+# TODO do the rest of these guys like this
     def deleteCounter(self, usr, k):
         global COUNTERAPP # fix this shit
         logging.info("Memory - deleteCounter")
