@@ -36,7 +36,12 @@ class CountersPlugin(GrossmaulPlugin):
             if (counters):
                 return "%s" % counters
             else:
-                return "I can't find any counters for %s" % user
+                # if we can't find by user, let's look by key
+                counters = self.get(message[1])
+                if (counters):
+                    return "%s" % counters
+                else: 
+                    return "I can't find any counters for %s" % user
         else:
             # If nothing else, return the sender's state
             return "%s" % self.getCountersByUser(sender)
