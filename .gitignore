@@ -1,0 +1,5 @@
+# ignore anything compiled
+*.pyc
+
+# ignore config to make adding settings easier
+config.py

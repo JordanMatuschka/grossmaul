@@ -1,24 +1,56 @@
 from memory import Memory
-from importlib import reload
 import logging
 import time
 import parsedatetime
+from importlib import import_module 
+from pathlib import Path
+from inspect import isclass
+from sys import path
+
+path.append('./plugins')
+import grossmaulplugin
 
 class BotBrain:
 
     def __init__(self):
         self.memory = Memory()
-        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "++" : self.opIncrement, "+=" : self.opIncrement,
-                          "--" : self.opDecrement, "-=" : self.opDecrement, "@all@" : self.opPublicReminder,
-                          "@@" : self.opReminder  }
+        self.OPERATORS = {":=" : self.opDefine, "<<" : self.opDefineKeyword, "@all@" : self.opPublicReminder, "@@" : self.opReminder  }
         self.COMMANDS  = {"remember" : self.comRemember, "recall" : self.comFindQuote, 
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
                     "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword,
-                    "vardump" : self.comVardump}
+                    "plugins" : self.comListPlugins }
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
                     "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
-                    "deletekeyword" : False, 'vardump' : False }
+                    "deletekeyword" : False, "plugins" : False }
+        self.PLUGINS = [ ]
+
+        # Look for any installed plugins and add to command/operator dictionaries
+        self.loadPlugins()
+
+    def loadPlugins(self):
+        path = Path('./plugins')
+
+        dirs = [e for e in path.iterdir() if e.is_dir()]
+        for d in dirs:
+            # Ignore temp/private directories like __pycache__
+            if d.name[0] != '_' and d.name[0] != '.':
+                # import the module for testing
+                plugin = import_module('plugins.' + d.name + '.' + d.name) 
+
+                for i in vars(plugin):
+                    cls = getattr(plugin, i)
+                    if isclass(cls):
+                        instance = cls()
+                        # If instance is subclass to GrossmaulPlugin, it will have COMMANDS, OPERATORS, and PROCESSCOMMANDS, so add those
+                        # to our main dictionaries
+                        if issubclass(cls, grossmaulplugin.GrossmaulPlugin):
+                            self.COMMANDS.update(instance.COMMANDS)
+                            self.OPERATORS.update(instance.OPERATORS)
+                            self.PROCESSCOMMANDS.update(instance.PROCESSCOMMANDS)
+                            if type(instance).__name__ != 'GrossmaulPlugin': 
+                                self.PLUGINS.append(type(instance).__name__)
+                            instance.setMemory(self.memory)
  
     def keepConnection(self):
         self.memory.keepConnection()
@@ -76,97 +108,8 @@ class BotBrain:
             self.memory.addFactoid(sender, trigger, factoid)
             return "Ok %s, remembering %s -> %s" % (sender, trigger, factoid)
 
-    def comVardump(self, message, sender, STATE):
-        logging.info("comVardump-  Message: %s Sender: %s" % (message, sender))
-        # Look for a target parameter
-        message = message.split()
-        if(len(message) == 2):
-            user = message[1]
-            logging.info("Looking for %s in kv" % user)
-            counters = self.memory.getCountersByUser(user)
-            if (counters):
-                return "%s" % counters
-            else:
-                return "I can't find any counters for %s" % user
-        else: 
-            # If nothing else, return the sender's state
-            return "%s" % self.memory.getCountersByUser(sender)
-
-    def opIncrement(self, message, sender, STATE, private=False):
-        logging.info("opIncrement-  Message: %s Sender: %s" % (message, sender))
-        if ("++" in message):
-            delim = "++"
-        else:
-            delim = "+="
-        logging.info("delim - %s" % (delim))
-
-        if(delim == "++" and len(message.split("++")[1]) > 0):
-            return
-
-        if (delim == "+="):
-            inc = int(message.split(delim)[1].strip())
-            message = message.split(delim)[0].strip()
-        else:
-            inc = 1
-            message = message.split(delim)[0].strip()
-
-        # Allow 'targeting' counters with dot notation
-        if ("." in message):
-            sender = message.split(".")[0]
-            message = message.split(".")[1]
-
-        logging.info("inc - %s" % (repr(inc)))
-        logging.info("message - %s" % (repr(message)))
-
-        counter = self.memory.getCounterValue(sender, message)
-        if(counter):
-            counter += inc 
-        else:
-            counter = inc
-
-        self.memory.setCounter(sender, message, int(counter))
-        return "%s has a %s count of %i" % (sender, message, counter)
-        
-    def opDecrement(self, message, sender, STATE, private=False):
-        logging.info("opDecrement-  Message: %s Sender: %s" % (message, sender))
-        if ("--" in message):
-            delim = "--"
-        else:
-            delim = "-="
-        logging.info("delim - %s" % (delim))
-
-        if(delim == '--' and len(message.split("--")[1]) > 0):
-            return
-
-        if (delim == "-="):
-            dec = int(message.split(delim)[1].strip())
-            message = message.split(delim)[0].strip()
-        else:
-            dec = 1
-            message = message.split(delim)[0].strip()
-
-        # Allow 'targeting' counters with dot notation
-        if ("." in message):
-            sender = message.split(".")[0]
-            message = message.split(".")[1]
-
-        logging.info("dec - %s" % (repr(dec)))
-        logging.info("message - %s" % (repr(message)))
-
-        counter = self.memory.getCounterValue(sender, message)
-        if(counter):
-            counter -= dec 
-            if(counter <= 0):
-                # Remove from list if we go to 0
-                self.memory.deleteCounter(sender, message)
-                return "Counter removed."
-            else:
-                self.memory.setCounter(sender, message, counter)
-                return "%s has a %s count of %i" % (sender, message, counter)
-        else:
-            return "I can't find that counter."
-
-        
+    def comListPlugins (self, message, sender, STATE):
+        return str(self.PLUGINS)
 
     def comDeleteKeyword(self, message, sender, STATE):
         logging.info("comDeleteKeyword-  Message: %s Sender: %s" % (message, sender))
@@ -199,7 +142,7 @@ class BotBrain:
             buff.popleft()
 
         primaryuser = message[0]
-        if(primaryuser in STATE['counters'].keys()):
+        if(primaryuser in STATE['timestamp'].keys()):
             while(len(message) > 1):
                 # allow for "remember user word user word user word"
                 # extract the username we're looking for
@@ -258,7 +201,6 @@ class BotBrain:
         if (len(query) > 0):
             return self.memory.findQuote(query)
 
-
     def comFindQuote(self, message, sender, STATE):
         logging.info("comFindQuote-  Message: %s Sender: %s" % (message, sender))
         trigger = message[len("recall")+1:]
@@ -267,7 +209,6 @@ class BotBrain:
             return self.memory.getQuote(query)
         else:
             return self.memory.getRandomQuote()
-
 
     def comCount(self, message, sender, STATE):
         logging.info("comCount-  Message: %s Sender: %s" % (message, sender))
@@ -297,6 +238,3 @@ class BotBrain:
 
     def getMessages(self):
         return self.memory.getMessages()    
-
-    def getCountersByUser(self, user):
-        return self.memory.getCountersByUser(user)
