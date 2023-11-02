@@ -20,7 +20,7 @@ STATE = {
 'boredom': 0,
 'boredom_limit': 700,
 'buffer': collections.deque(maxlen = 1000),
-'counters':  {"__startup":True},
+'startup':  {"__startup":True},
 'timestamp': {},
 }
 
@@ -55,7 +55,7 @@ class GrossmaulBot(pydle.Client):
                             else:
                                 message = message.replace('$' + keyword + '$', keyword, 1)
 
-                        if word[0] is '$':
+                        if word[0] == '$':
                             # parse into only alphanumeric characters (+ some others)
                             keyword = ''
                             for char in word:
@@ -100,9 +100,9 @@ class GrossmaulBot(pydle.Client):
         await super().on_join(channel, user)
         logging.info("%s has joined %s" % (user, channel))
         # Detect if the client is using a backup name and if so change NICK
-        # If "__startup" is still in STATE['counters'], we will use user as the new NICK
-        if("__startup" in STATE['counters']):
-            del STATE['counters']["__startup"]
+        # If "__startup" is still in STATE['startup'], we will use user as the new NICK
+        if("__startup" in STATE['startup']):
+            del STATE['startup']["__startup"]
             
             if (NICK != user):
                 NICK = user
@@ -118,22 +118,17 @@ class GrossmaulBot(pydle.Client):
         logging.warning("Client received unknown data: %s" % message)
 
     async def on_nick_change(self, old, new):
-        """Callback when a user changes nicknames: keep counter keys up to date"""
+        """Callback when a user changes nicknames"""
         global STATE
         global NICK
         if (NICK != old and NICK != new and old != '<unregistered>'):
-            logging.info("Changing user counters from %s to %s" % (old, new))
-            if(old in STATE['counters'].keys()):
-                STATE['counters'][new] = STATE['counters'][old]
-                del STATE['counters'][old]
-            else:
-                STATE['counters'][new] = {}
+            logging.info("User Changing nick from %s to %s" % (old, new))
 
     async def on_part(self, channel, user, message=None):
-        """"Remove counters on part, thus removing user from random $user choice"""
-        if(user in STATE['counters'].keys()):
-            logging.info("Removing user counters for %s " % user)
-            del STATE['counters'][user]
+        """"Remove timestamp on part, thus removing user from random $user choice"""
+        if(user in STATE['timestamp'].keys()):
+            logging.info("Removing user timestamp for %s " % user)
+            del STATE['timestamp'][user]
 
     async def on_ctcp_action(self, target, query, contents=None):
         logging.info("ctcp action target=%s query=%s contents=%s" % (target, query, contents))
@@ -145,12 +140,6 @@ class GrossmaulBot(pydle.Client):
 
         if(sender is None or sender == NICK):
             return 
-
-        # make sure the username is initialized for counter use
-        if(sender not in STATE['counters'].keys()): 
-            if(sender.lower() not in CHAN.lower()):
-                logging.info("Adding %s key to STATE['counters']" % sender)
-                STATE['counters'][sender] = self.botbrain.getCountersByUser(sender)
 
         # Save timestamp of most recent message
         logging.info("Updating timestamp for %s" % sender)
@@ -168,15 +157,12 @@ class GrossmaulBot(pydle.Client):
         is_op = False
         found_op = False
 
-        for word in message.split(' '):
-            for op in self.botbrain.OPERATORS.keys():
-                if(op in word):
-                    logging.info("Found %s in %s" % (op, word))
-                    if(word not in STATE['counters'].keys() ):
-                        is_op = True
-                        found_op = op
-                    else:
-                        logging.info("%s is in counters" % (word))
+#        for word in message.split(' '):
+        for op in self.botbrain.OPERATORS.keys():
+            if(op in message):
+                logging.info("Found `%s` in %s" % (op, message))
+                is_op = True
+                found_op = op
 
         if(is_op or message[0] == '!' or (len(message) > len(NICK) and NICK.lower() == message[:len(NICK)].lower())):
             # reset boredom limit when we're addressed
@@ -245,7 +231,7 @@ class GrossmaulBot(pydle.Client):
         # First allow the bot to address who it's responding to via $nick
         message = message.replace("$nick", sender)        
         # replace any instances of $user with a random username from STATE 
-        if (len(list(STATE['counters'].keys())) > 0):
+        if (len(list(STATE['timestamp'].keys())) > 0):
             # First, attempt to pick users who have talked recently for $recentuser
             user = random.choice(list(STATE['timestamp'].keys()))
             success = False
@@ -266,9 +252,9 @@ class GrossmaulBot(pydle.Client):
             message = message.replace("$recentuser", "$user")
 
             # Don't address messages to the channel
-            user = random.choice(list(STATE['counters'].keys()))
+            user = random.choice(list(STATE['timestamp'].keys()))
             while user.lower() == CHAN.lower():
-                user = random.choice(list(STATE['counters'].keys()))
+                user = random.choice(list(STATE['timestamp'].keys()))
             message = message.replace("$user", user)
         return message
 

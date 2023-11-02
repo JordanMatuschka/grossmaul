@@ -52,10 +52,3 @@ class GrossmaulPlugin:
             app = self.getClass()
             return self.memory.setValue(app, key, usr, value)
 
-
-
-# Find by app, key (example, find all plinko5s throughout users)
-# Find by app, key, user (standard usage)
-# Find by app, user (get all counters)
-# Set by app, key, user
-# Delete by app, key, user

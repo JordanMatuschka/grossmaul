@@ -39,6 +39,7 @@ class Message(Model):
         database = db
 
 class KV(Model):
+#TODO update docstring
     """Simple model that stores key-value pairs per user, per app
     lookups require usr / k and return value
     usr may be overridden to be applications or plugins with prefixes for extensibility
@@ -152,27 +153,17 @@ class Memory:
         logging.info("Memory - countKeyword")
         return "%s count: %s" % (keyword, Keyword.select().where(Keyword.keyword == keyword).count())
 
-    def getCountersByUser(self, usr):
-        global COUNTERAPP # fix this shit
-        logging.info("Memory - getCountersByUser")
-        ret = {}
-        for counter in KV.select().where(KV.usr == usr, KV.app == COUNTERAPP):
-            logging.info("Loading %s - %s" % (str(counter.k), str(counter.value)))
-            ret[str(counter.k)] = int(counter.value)
-        return ret 
-
     # All db API should follow App, Key, User order, some will be missing
-
-# Abstract this one even futrher, it should call get KVA and just return the value
+    # Abstract this one even futrher, it should call get KV and just return the value
     def getValueAppKeyUser(self, app, k, usr):
-        logging.info("Memory - getValueAppKeyUser")
-        for kva in KV.select().where(
+        logging.info("Memory - getValueAppKeyUser - app = %s, k = %s, usr = %s" % (str(app), str(k), str(usr)))
+        for kv in KV.select().where(
                 (KV.usr == usr) & 
                 (KV.k == k) &
                 (KV.app == app)
             ):
-            logging.info("KVA id = %i" % kva.id)
-            return kva
+            logging.info("KV id = %i, value = %s" % ( kv.id, kv.value))
+            return kv.value
         return None
 
     def getValuesAppKey(self, app, k):
@@ -194,51 +185,31 @@ class Memory:
         return ret 
 
     def getKVAppKeyUser(self, app, k, usr):
-        logging.info("Memory - getValueAppKeyUser")
-        for kva in KV.select().where(
+        logging.info("Memory - getKVAppKeyUser")
+        for kv in KV.select().where(
                 (KV.usr == usr) & 
                 (KV.k == k) &
                 (KV.app == app)
             ):
-            logging.info("KVA id = %i" % kva.id)
-            return kva
+            logging.info("KV id = %i" % kv.id)
+            return kv
         return None
 
     def setValue(self, app, k, usr, value):
         logging.info("Memory - setValue")
-        counter = self.getValueAppKeyUser(app, k, usr)
-        if not counter:
-            # counter does not exist, simply create the object
-            counter = KV(usr = usr, k = k, value = value, app = app)
+        kv = self.getKVAppKeyUser(app, k, usr)
+        if not kv:
+            # kv does not exist, simply create the object
+            kv = KV(usr = usr, k = k, value = value, app = app)
         else:
-            counter.value = value
-
-        counter.save()
+            kv.value = value
+        kv.save()
 
     def delete(self, app, usr, k):
         logging.info("Memory - delete")
         c = self.getKVAppKeyUser(app, usr, k)
         if (c is not None):
             c.delete_instance()
-
-    def getCounter(self, usr, k):
-        global COUNTERAPP # fix this shit
-        logging.info("Memory - getCounter")
-        return self.getValueAppKeyUser(COUNTERAPP, k, usr)
-
-    def getCounterValue(self, usr, k):
-        logging.info("Memory - getCounterValue")
-        counter = self.getCounter(usr, k)
-        return int(counter.value)
-        
-# TODO do the rest of these guys like this
-    def deleteCounter(self, usr, k):
-        global COUNTERAPP # fix this shit
-        logging.info("Memory - deleteCounter")
-        c = self.getCounter(usr, k)
-        if (c is not None):
-            c.delete_instance()
-        
 
     def getMessageById(self, id):
         logging.info("Memory - getMessageById")
