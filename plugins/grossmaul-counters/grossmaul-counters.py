@@ -7,17 +7,6 @@ class CountersPlugin(GrossmaulPlugin):
         self.COMMANDS = {'vardump' : self.comVardump }
         self.PROCESSCOMMANDS = { 'vardump' : False }
 
-    def testAppKey(self, message, sender, STATE, private=False):
-        return str(self.get('fart', None))
-
-    def testAppUser(self, message, sender, STATE, private=False):
-        return str(self.get(key=None, usr='tirtirtir'))
-
-    def setval(self, message, sender, STATE, private=False):
-        return str(self.setValue(key='faaaart', usr='tirtirtir', value='That one is gonna itch when it dries'))
-
-    def delval(self, message, sender, STATE, private=False):
-        return str(self.delete(key='faaaart', usr='tirtirtir'))
 
     def getCountersByUser(self, user):
         logging.info("CountersPlugin - getCountersByUser - %s" % user)
