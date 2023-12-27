@@ -152,7 +152,7 @@ class BotBrain:
 
                 # search the buffer for a matching line
                 for user, text in buff:
-                    if(user == targetuser and targettext in text):
+                    if(user == targetuser and targettext.lower() in text.lower()):
                         # If there's already something there, make it multiline
                         if (len(quote) > 0):
                             quote += '\n' + '<' + targetuser + '> ' + text
