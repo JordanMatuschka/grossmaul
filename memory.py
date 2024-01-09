@@ -48,7 +48,7 @@ class KV(Model):
     id = IntegerField(primary_key=True)
     usr = CharField()
     k = CharField()
-    value = CharField()
+    value = TextField()
     app = CharField()
     class Meta:
         global db
