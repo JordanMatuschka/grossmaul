@@ -230,26 +230,25 @@ class GrossmaulBot(pydle.Client):
         global STATE
         # First allow the bot to address who it's responding to via $nick
         message = message.replace("$nick", sender)        
-        # replace any instances of $user with a random username from STATE 
-        if (len(list(STATE['timestamp'].keys())) > 0):
-            # First, attempt to pick users who have talked recently for $recentuser
-            user = random.choice(list(STATE['timestamp'].keys()))
-            success = False
-            for i in range(100):
-                while user.lower() == CHAN.lower():
-                    logging.info("user is chan, rechecking")
-                    user = random.choice(list(STATE['timestamp'].keys()))
-                logging.info("Checking timestamp for %s" % user)
-                if time.time() - LULL < STATE['timestamp'][user]:
-                    logging.info("Replacing $recentuser with %s" % user)
-                    message = message.replace("$recentuser", user)
-                    break 
-                else:
-                    user = random.choice(list(STATE['timestamp'].keys()))
-                    logging.info("Timestamp of %s too old" % STATE['timestamp'][user])
 
-            # Last case, default to $user
-            message = message.replace("$recentuser", "$user")
+        if ("$recentuser" in message):
+            if (len(list(STATE['timestamp'].keys())) > 0):
+                # First, attempt to pick users who have talked recently for $recentuser
+                success = False
+                for i in range(100):
+                    user = random.choice(list(STATE['timestamp'].keys()))
+                    if user.lower() == CHAN.lower():
+                        logging.info("user is chan, rechecking")
+                    elif time.time() - LULL < STATE['timestamp'][user]:
+                        logging.info("Replacing $recentuser with %s" % user)
+                        message = message.replace("$recentuser", user)
+                        break 
+                    else:
+                        user = random.choice(list(STATE['timestamp'].keys()))
+                        logging.info("Timestamp of %s too old" % STATE['timestamp'][user])
+
+                # Last case, if we haven't found a recent user, default to $user
+                message = message.replace("$recentuser", "$user")
 
             # Don't address messages to the channel
             user = random.choice(list(STATE['timestamp'].keys()))
