@@ -285,8 +285,8 @@ class GrossmaulBot(pydle.Client):
                         await self.sendMessage(CHAN, self.preprocess_message(NICK, message))
                     else:
                         await self.sendMessage(target, self.preprocess_message(NICK, message))
-        # Don't get kicked for flooding
-        await asyncio.sleep(0.3)
+            # Don't get kicked for flooding
+            await asyncio.sleep(0.3)
 
     async def on_raw_privmsg(self, message):
         await super(GrossmaulBot, self).on_raw_privmsg(message)
