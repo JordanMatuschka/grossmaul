@@ -184,6 +184,7 @@ class GrossmaulBot(pydle.Client):
                 if (retval is not None):
                     # Send message without processing on operators
                     await self.sendMessage(channel, retval, False)
+                is_op = False
 
             # If it's not an operator, look for a command
             if(not is_op):
@@ -287,9 +288,6 @@ class GrossmaulBot(pydle.Client):
                         await self.sendMessage(target, self.preprocess_message(NICK, message))
             # Don't get kicked for flooding
             await asyncio.sleep(0.3)
-
-    async def on_raw_privmsg(self, message):
-        await super(GrossmaulBot, self).on_raw_privmsg(message)
 
     async def on_raw(self, message):
         """Called on raw message (almost anything). We don't want to handle most things here."""
