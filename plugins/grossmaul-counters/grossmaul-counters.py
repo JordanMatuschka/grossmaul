@@ -57,6 +57,10 @@ class CountersPlugin(GrossmaulPlugin):
         if(delim == "++" and len(message.split("++")[1]) > 0):
             return
 
+        # there shouldn't be any tokens before the counter + delim for valid use
+        if len(message.split(delim)[0].split()) > 1:
+            return
+
         if (delim == "+="):
             inc = int(message.split(delim)[1].strip())
             message = message.split(delim)[0].strip()
@@ -90,7 +94,11 @@ class CountersPlugin(GrossmaulPlugin):
             delim = "-="
         logging.info("delim - %s" % (delim))
 
-        if(delim == '--' and len(message.split("--")[1]) > 0):
+        if (delim == '--' and len(message.split("--")[1]) > 0):
+            return
+
+        # there shouldn't be any tokens before the counter + delim for valid use
+        if len(message.split(delim)[0].split()) > 1:
             return
 
         if (delim == "-="):
@@ -99,6 +107,7 @@ class CountersPlugin(GrossmaulPlugin):
         else:
             dec = 1
             message = message.split(delim)[0].strip()
+
 
         # Allow 'targeting' counters with dot notation
         if ("." in message):
