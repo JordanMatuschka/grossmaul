@@ -251,11 +251,11 @@ class GrossmaulBot(pydle.Client):
                 # Last case, if we haven't found a recent user, default to $user
                 message = message.replace("$recentuser", "$user")
 
-            # Don't address messages to the channel
+        # Don't address messages to the channel
+        user = random.choice(list(STATE['timestamp'].keys()))
+        while user.lower() == CHAN.lower():
             user = random.choice(list(STATE['timestamp'].keys()))
-            while user.lower() == CHAN.lower():
-                user = random.choice(list(STATE['timestamp'].keys()))
-            message = message.replace("$user", user)
+        message = message.replace("$user", user)
         return message
 
     async def on_private_message(self, target, sender, message):
