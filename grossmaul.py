@@ -156,8 +156,8 @@ class GrossmaulBot(pydle.Client):
         # For now, make sure that the message is addressed to this bot or is an operator
         is_op = False
         found_op = False
+        bot_addressed = False
 
-#        for word in message.split(' '):
         for op in self.botbrain.OPERATORS.keys():
             if(op in message):
                 logging.info("Found `%s` in %s" % (op, message))
@@ -171,8 +171,10 @@ class GrossmaulBot(pydle.Client):
             # remove the bot name/bang from the message
             if(message[0] == '!'):
                 message = message[1:]
+                bot_addressed = True
             elif(NICK.lower() == message[:len(NICK)].lower()):
                 message = message[len(NICK)+1:]
+                bot_addressed = True
 
             # Parse for special operators
             is_command = False
@@ -184,10 +186,13 @@ class GrossmaulBot(pydle.Client):
                 if (retval is not None):
                     # Send message without processing on operators
                     await self.sendMessage(channel, retval, False)
-                is_op = False
+                    ## early return to help prevent duplicate replies when someone uses commands and operators in the same line
+                    return
+                else:
+                    is_op = False
 
-            # If it's not an operator, look for a command
-            if(not is_op):
+            # If it's not an operator, and someone addressed the bot with a ! or the nick, look for a command
+            if(bot_addressed):
                 # extract the command from the message
                 command = message.split()[0]
                 command = command.lower()
@@ -199,11 +204,12 @@ class GrossmaulBot(pydle.Client):
                     if (retval is not None):
                         # Send message with appriate processing
                         await self.sendMessage(channel, self.preprocess_message(sender, retval), self.botbrain.PROCESSCOMMANDS[command])
+                        return
                 else:
                     logging.info("Can't find %s()" % command)
 
             # If it's not an operator and not a command, let's see if there are any factoids on the topic
-            if(not is_op and not is_command):
+            if(bot_addressed and not is_op and not is_command):
                 logging.info("Looking for factoid: %s" % message)
                 factoid = self.botbrain.findFactoid(message.lower().rstrip().lstrip())
                 if(factoid is not None):
