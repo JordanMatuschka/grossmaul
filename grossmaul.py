@@ -40,8 +40,8 @@ class GrossmaulBot(pydle.Client):
 
         # Look for a $ that indicates keywords
         if processing:
-            for i in range(3):
-                if '$' in message:
+            for i in range(32):
+                if '$' in message and len(message) < 512:
                     # split into words
                     words = message.split()
                     for word in words:
