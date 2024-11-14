@@ -19,10 +19,10 @@ class BotBrain:
                     "evaluate" : self.comEvaluate, "count" : self.comCount, "findfactoid" : self.comFactoidSearch,
                     "findquote" : self.comQuoteSearch, "findkeyword" : self.comKeywordSearch,
                     "delete" : self.comDeleteFactoid, "deletekeyword" : self.comDeleteKeyword,
-                    "plugins" : self.comListPlugins }
+                    "deletequote" : self.comDeleteQuote, "plugins" : self.comListPlugins }
         self.PROCESSCOMMANDS  = {"remember" :  False, "recall" : False, "evaluate" : True, "count" : False,
                     "findfactoid" : False, "findquote" : False, "findkeyword" : False, "delete" : False,
-                    "deletekeyword" : False, "plugins" : False }
+                    "deletekeyword" : False, "deletequote" : False, "plugins" : False }
         self.PLUGINS = [ ]
 
         # Look for any installed plugins and add to command/operator dictionaries
@@ -122,6 +122,12 @@ class BotBrain:
         # strip out command
         message = message[len('delete')+1:].lstrip()
         return self.memory.deleteFactoid(sender, message, STATE['allow_delete'])
+
+    def comDeleteQuote(self, message, sender, STATE):
+        logging.info("comDeleteQuote-  Message: %s Sender: %s" % (message, sender))
+        # strip out command
+        message = message[len('deletequote')+1:].lstrip()
+        return self.memory.deleteQuote(sender, message, STATE['allow_delete'])
 
 
     def comRemember(self, message, sender, STATE):

@@ -122,10 +122,21 @@ class Memory:
         k = Keyword.get(Keyword.id == id)
         if (k is not None):
             ret =  "({}, {}) {} - {}".format(k.author, k.id, k.keyword, k.replacement)
-            if (k.author == username or f.author in allow_delete):
+            if (k.author == username or k.author in allow_delete):
                 k.delete_instance()
                 return "Deleted: " + ret
             return "Unable to delete keyword: " + ret
+        return "Unknown id."
+
+    def deleteQuote(self, username, id, allow_delete=[]):
+        logging.info("Memory - deleteQuote")
+        q = Quote.get(Quote.id == id)
+        if (q is not None):
+            ret =  "({}, {}) {} - {}".format(q.author, q.id, q.trigger, q.quote)
+            if (q.author == username or q.author in allow_delete):
+                q.delete_instance()
+                return "Deleted: " + ret
+            return "Unable to delete quote: " + ret
         return "Unknown id."
 
     def addFactoid(self, author, trigger, quote):
