@@ -20,6 +20,7 @@ STATE = {
 'boredom': 0,
 'boredom_limit': 700,
 'buffer': collections.deque(maxlen = 1000),
+'repl': False,
 'startup':  {"__startup":True},
 'timestamp': {},
 }
@@ -78,12 +79,18 @@ class GrossmaulBot(pydle.Client):
             #otherwise simply log and send the message
             STATE['buffer'].appendleft( (NICK, message) )
             logging.info("Sending message to %s: %s" % (target, message))
-            #await self.message(target, message)
-            print (message)
+            if STATE['repl']:
+                print (message)
+            else:
+                await self.message(target, message)
 
     async def action(self, target, message):
         # send a CTCP message that will be interpreted as an action
-        await self.ctcp(target, "ACTION", message)
+
+        if (STATE['repl']):
+            print ("/me " + message)
+        else:
+            await self.ctcp(target, "ACTION", message)
 
 
     async def on_connect(self):
@@ -340,11 +347,20 @@ async def main():
 async def repl():
     global CHAN
     global NICK
+    global STATE
+
+    # Set repl so we know to print output locally
+    STATE['repl'] = True 
     client = GrossmaulBot(nickname = NICK)
     client.botbrain = BotBrain()
-    test = "fart"
     
-    print (await client.on_message(CHAN, "user", test))
+    inp = ""
+    print ("")
+    print ("Entering REPL mode, type 'exit' to end.")
+    print ("")
+    while (inp.lower() != "exit"):
+        inp = input("> ")
+        await client.on_message(CHAN, "user", inp)
     
 
 if __name__ == "__main__":
