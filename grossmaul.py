@@ -345,7 +345,7 @@ async def main():
         client = GrossmaulBot(NICK, fallback_nicknames=[NICK[:-1]+"1", NICK[:-1]+"2"])
     logging.info("Connecting to %s:%s" % (HOST, PORT))
     await client.connect(HOST, PORT, tls=True)
-    await client.handle_forever()
+    await asyncio.Future()
 
 async def repl():
     global CHAN
