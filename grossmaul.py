@@ -281,9 +281,15 @@ class GrossmaulBot(pydle.Client):
         await self.on_message(sender, sender, NICK + ': ' + message, True)
 
     async def get_messages(self):
+        global STATE 
+
         # check for new messages
-        for message, target, sender, evaluate in self.botbrain.getMessages():
+        for message, target, sender, evaluate, id in self.botbrain.getMessages():
             if len(message) > 0: 
+                if str(id) in sender:
+                    # text messages in show up as [ username id] message
+                    STATE['latest_message_id'] = id
+                
                 if evaluate:
                     # Pretend this is just a normal message send from the channel
                         await self.sendMessage(CHAN, '[ ' + sender + '] ' + message, False)

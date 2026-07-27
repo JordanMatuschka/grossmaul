@@ -242,7 +242,7 @@ class Memory:
             m.timesSeen = m.timesSeen + 1
             m.save()
             # Return only the message
-            messages.append((m.message, m.target, m.sender, m.evaluate))
+            messages.append((m.message, m.target, m.sender, m.evaluate, m.id))
              
         return messages
 
